@@ -44,7 +44,8 @@ export default function LoginPage() {
       } else {
         setError(data.error || '登录失败')
       }
-    } catch (error) {
+    } catch (loginError) {
+      console.error('登录失败:', loginError)
       setError('网络错误，请稍后重试')
     } finally {
       setLoading(false)

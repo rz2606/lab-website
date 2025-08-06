@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Users, BookOpen, Award, FileText } from 'lucide-react'
+import { Calendar, Award, FileText } from 'lucide-react'
 
 interface Publication {
   id: number
@@ -120,7 +120,7 @@ const PublicationsPage = () => {
         {/* Papers Tab */}
         {activeTab === 'papers' && (
           <div className="space-y-6">
-            {papers.map((paper, index) => (
+            {papers.map((paper) => (
               <div key={paper.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -159,7 +159,7 @@ const PublicationsPage = () => {
         {/* Patents Tab */}
         {activeTab === 'patents' && (
           <div className="space-y-6">
-            {patents.map((patent, index) => (
+            {patents.map((patent) => (
               <div key={patent.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

@@ -25,15 +25,37 @@ const NewsPage = () => {
     const fetchNews = async () => {
       try {
         setLoading(true)
+        console.log('开始获取新闻数据...')
         const response = await fetch('/api/news')
+        console.log('API响应状态:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        })
+        
         if (!response.ok) {
-          throw new Error('获取新闻数据失败')
+          throw new Error(`获取新闻数据失败: ${response.status} ${response.statusText}`)
         }
+        
         const data = await response.json()
-        setNews(data)
+        console.log('获取到的数据:', {
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+          length: Array.isArray(data) ? data.length : 'N/A',
+          data: data
+        })
+        // 确保data是数组，如果不是则设置为空数组
+        setNews(Array.isArray(data) ? data : [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : '获取新闻数据失败')
+        const errorMessage = err instanceof Error ? err.message : '获取新闻数据失败'
+        setError(errorMessage)
         console.error('获取新闻数据失败:', err)
+        console.error('错误详情:', {
+          message: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          timestamp: new Date().toISOString()
+        })
       } finally {
         setLoading(false)
       }

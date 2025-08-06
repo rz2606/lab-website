@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ExternalLink, Search, Code, Database, Brain, Microscope } from 'lucide-react'
-import Link from 'next/link'
+import Image from 'next/image'
 
 interface Tool {
   id: number
@@ -133,9 +133,11 @@ const ToolsPage = () => {
               {/* Tool Image */}
               <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
                 {tool.image ? (
-                  <img 
+                  <Image 
                     src={tool.image} 
                     alt={tool.name}
+                    width={400}
+                    height={192}
                     className="w-full h-full object-cover"
                   />
                 ) : (

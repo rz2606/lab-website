@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+import { requireAdmin } from '@/lib/auth-middleware'
 
 // 获取单个开发工具
 export async function GET(
@@ -43,10 +43,8 @@ export async function PUT(
   try {
     const body = await request.json()
     const { name, description, url, category, image, reference, tags } = body
-    const currentUserId = getCurrentUserId(request)
-
     // 准备更新数据，暂时不设置updatedBy以避免外键约束问题
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       name,
       description,
       url,

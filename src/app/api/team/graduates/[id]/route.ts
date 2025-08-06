@@ -5,11 +5,12 @@ import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 // 获取单个毕业生
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const graduate = await db.graduate.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!graduate) {
@@ -32,8 +33,9 @@ export async function GET(
 // 更新毕业生
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
@@ -44,7 +46,7 @@ export async function PUT(
     const currentUserId = getCurrentUserId(request)
 
     const graduate = await db.graduate.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         name,
         position,
@@ -67,11 +69,12 @@ export async function PUT(
 // 删除毕业生
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     await db.graduate.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: '毕业生删除成功' })

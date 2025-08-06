@@ -5,11 +5,12 @@ import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 // 获取单个PI
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const pi = await db.pI.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!pi) {
@@ -32,8 +33,9 @@ export async function GET(
 // 更新PI
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
@@ -44,7 +46,7 @@ export async function PUT(
     const currentUserId = getCurrentUserId(request)
 
     const pi = await db.pI.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         name,
         photo,
@@ -71,15 +73,16 @@ export async function PUT(
 // 删除PI
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
   
   try {
     await db.pI.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: 'PI删除成功' })

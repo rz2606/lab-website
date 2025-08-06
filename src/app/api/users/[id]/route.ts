@@ -38,7 +38,7 @@ export async function GET(
     }
 
     return NextResponse.json(user)
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('获取用户失败:', error)
     return NextResponse.json(
       { error: '获取用户失败' },
@@ -62,7 +62,7 @@ export async function PUT(
     const { username, email, password, roleType, name, isActive } = body
     const currentUserId = getCurrentUserId(request)
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       username,
       email,
       roleType,
@@ -98,7 +98,7 @@ export async function PUT(
     })
 
     return NextResponse.json(user)
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('更新用户失败:', error)
     return NextResponse.json(
       { error: '更新用户失败' },
@@ -119,7 +119,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: '用户删除成功' })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('删除用户失败:', error)
     return NextResponse.json(
       { error: '删除用户失败' },

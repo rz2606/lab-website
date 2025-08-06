@@ -1078,7 +1078,7 @@ export default function AdminPage() {
 // 用户表单组件
 function UserForm({ user, onSubmit, onCancel, isEditing }: {
   user?: User | null
-  onSubmit: (userData: any) => void
+  onSubmit: (userData: Record<string, unknown>) => void
   onCancel: () => void
   isEditing: boolean
 }) {
@@ -1199,7 +1199,7 @@ function UserForm({ user, onSubmit, onCancel, isEditing }: {
 // 新闻表单组件
 function NewsForm({ news, onSubmit, onCancel, isEditing }: {
   news?: News | null
-  onSubmit: (newsData: any) => void
+  onSubmit: (newsData: Record<string, unknown>) => void
   onCancel: () => void
   isEditing: boolean
 }) {
@@ -1323,7 +1323,7 @@ function NewsForm({ news, onSubmit, onCancel, isEditing }: {
 // 发表成果表单组件
 function PublicationForm({ publication, onSubmit, onCancel, isEditing }: {
   publication?: Publication | null
-  onSubmit: (publicationData: any) => void
+  onSubmit: (publicationData: Record<string, unknown>) => void
   onCancel: () => void
   isEditing: boolean
 }) {
@@ -1448,7 +1448,7 @@ function PublicationForm({ publication, onSubmit, onCancel, isEditing }: {
 // 开发工具表单组件
 function ToolForm({ tool, onSubmit, onCancel, isEditing }: {
   tool?: Tool | null
-  onSubmit: (toolData: any) => void
+  onSubmit: (toolData: Record<string, unknown>) => void
   onCancel: () => void
   isEditing: boolean
 }) {
@@ -1585,7 +1585,7 @@ function ToolForm({ tool, onSubmit, onCancel, isEditing }: {
 // 团队成员表单组件
 function TeamMemberForm({ member, onSubmit, onCancel, isEditing, defaultType }: {
   member?: TeamMember | null
-  onSubmit: (memberData: any) => void
+  onSubmit: (memberData: Record<string, unknown>) => void
   onCancel: () => void
   isEditing: boolean
   defaultType: 'pi' | 'researcher' | 'graduate'

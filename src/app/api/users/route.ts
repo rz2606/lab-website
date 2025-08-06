@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+import { requireAdmin } from '@/lib/auth-middleware'
 
 // 获取所有用户（仅管理员）
 export async function GET(request: NextRequest) {
@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { username, email, password, roleType = 'user', name } = body
-    const currentUserId = getCurrentUserId(request)
 
     // 验证必填字段
     if (!username || !email || !password) {

@@ -11,7 +11,7 @@ export async function GET() {
       ]
     })
     return NextResponse.json(news)
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('获取新闻失败:', error)
     return NextResponse.json(
       { error: '获取新闻失败' },
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建创建数据，只有在有有效用户ID时才包含createdBy和updatedBy
-    const createData: any = {
+    const createData: Record<string, unknown> = {
       title,
       content,
       summary,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(news, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('创建新闻失败:', error)
     return NextResponse.json(
       { error: '创建新闻失败' },

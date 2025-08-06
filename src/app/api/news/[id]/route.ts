@@ -5,11 +5,12 @@ import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 // 获取单个新闻
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const news = await db.news.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!news) {
@@ -32,8 +33,9 @@ export async function GET(
 // 更新新闻
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
@@ -44,7 +46,7 @@ export async function PUT(
     const currentUserId = getCurrentUserId(request)
 
     // 构建更新数据，只有在有有效用户ID时才包含updatedBy
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       title,
       content,
       summary,
@@ -57,7 +59,7 @@ export async function PUT(
     }
 
     const news = await db.news.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: updateData
     })
 
@@ -74,15 +76,16 @@ export async function PUT(
 // 删除新闻
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
   
   try {
     await db.news.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: '新闻删除成功' })

@@ -5,11 +5,12 @@ import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 // 获取单个发表成果
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const publication = await db.publication.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!publication) {
@@ -32,8 +33,9 @@ export async function GET(
 // 更新发表成果
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
@@ -44,7 +46,7 @@ export async function PUT(
     const currentUserId = getCurrentUserId(request)
 
     const publication = await db.publication.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         title,
         authors,
@@ -69,15 +71,16 @@ export async function PUT(
 // 删除发表成果
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
   
   try {
     await db.publication.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: '发表成果删除成功' })

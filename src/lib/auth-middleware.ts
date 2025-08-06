@@ -58,8 +58,8 @@ export function getCurrentUserId(request: NextRequest): number | null {
 }
 
 // 权限验证中间件
-export function withAuth(handler: Function, requiredRole?: string) {
-  return async (request: NextRequest, context?: any) => {
+export function withAuth(handler: (request: NextRequest, context: { params: Record<string, string> }) => Promise<NextResponse>, requiredRole?: string) {
+  return async (request: NextRequest, context: { params: Record<string, string> }) => {
     try {
       const token = getTokenFromRequest(request)
       
@@ -89,14 +89,14 @@ export function withAuth(handler: Function, requiredRole?: string) {
       }
       
       // 将用户信息添加到请求中
-      (request as any).user = payload
+      (request as NextRequest & { user: JWTPayload }).user = payload
       
       // 调用原始处理函数
       return await handler(request, context)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('权限验证失败:', error)
       return NextResponse.json(
-        { error: '权限验证失败' },
+        { error: error instanceof Error ? error.message : '权限验证失败' },
         { status: 500 }
       )
     }
@@ -104,7 +104,7 @@ export function withAuth(handler: Function, requiredRole?: string) {
 }
 
 // 仅管理员权限
-export function withAdminAuth(handler: Function) {
+export function withAdminAuth(handler: (request: NextRequest, context: { params: Record<string, string> }) => Promise<NextResponse>) {
   return withAuth(handler, 'admin')
 }
 

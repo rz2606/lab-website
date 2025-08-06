@@ -5,11 +5,12 @@ import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 // 获取单个研究人员
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const researcher = await db.researcher.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!researcher) {
@@ -32,8 +33,9 @@ export async function GET(
 // 更新研究人员
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   // 验证管理员权限
   const authResult = await requireAdmin(request)
   if (authResult) return authResult
@@ -44,7 +46,7 @@ export async function PUT(
     const currentUserId = getCurrentUserId(request)
 
     const researcher = await db.researcher.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         name,
         photo,
@@ -68,11 +70,12 @@ export async function PUT(
 // 删除研究人员
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     await db.researcher.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: '研究人员删除成功' })
