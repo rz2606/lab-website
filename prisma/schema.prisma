@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// PI (Principal Investigator) 负责人
+model PI {
+  id          Int      @id @default(autoincrement())
+  name        String
+  photo       String?
+  title       String
+  email       String   @unique
+  experience  String?  @db.Text
+  positions   String?  @db.Text // 社会兼职
+  awards      String?  @db.Text // 学术奖项
+  papers      String?  @db.Text // 代表性论文
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int?     // 创建人
+  updatedBy   Int?     // 修改人
+  
+  // 关联关系
+  creator     User?    @relation("PICreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("PIUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("pis")
+}
+
+// 研究人员/博士后
+model Researcher {
+  id        Int      @id @default(autoincrement())
+  name      String
+  photo     String?
+  email     String   @unique
+  direction String?  // 研究方向
+  type      String   @default("researcher") // researcher, postdoc
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy Int?     // 创建人
+  updatedBy Int?     // 修改人
+  
+  // 关联关系
+  creator   User?    @relation("ResearcherCreatedBy", fields: [createdBy], references: [id])
+  updater   User?    @relation("ResearcherUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("researchers")
+}
+
+// 毕业生
+model Graduate {
+  id             Int      @id @default(autoincrement())
+  name           String
+  position       String?  // 职位
+  email          String?
+  company        String?  // 单位
+  graduationYear Int?     // 毕业年份
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      Int?     // 创建人
+  updatedBy      Int?     // 修改人
+  
+  // 关联关系
+  creator        User?    @relation("GraduateCreatedBy", fields: [createdBy], references: [id])
+  updater        User?    @relation("GraduateUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("graduates")
+}
+
+// 发表成果
+model Publication {
+  id        Int      @id @default(autoincrement())
+  title     String
+  authors   String
+  journal   String
+  year      Int
+  type      String   @default("paper") // paper, patent
+  content   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy Int?     // 创建人
+  updatedBy Int?     // 修改人
+  
+  // 关联关系
+  creator   User?    @relation("PublicationCreatedBy", fields: [createdBy], references: [id])
+  updater   User?    @relation("PublicationUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("publications")
+}
+
+// 程序开发工具
+model Tool {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  category    String
+  url         String?
+  image       String?
+  reference   String?  // 相关论文引用
+  tags        String?  // 标签，用逗号分隔
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int?     // 创建人
+  updatedBy   Int?     // 修改人
+  
+  // 关联关系
+  creator     User?    @relation("ToolCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("ToolUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("tools")
+}
+
+// 新闻动态
+model News {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @db.Text
+  summary   String?  // 摘要
+  image     String?
+  isPinned  Boolean  @default(false) // 是否置顶
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy Int?     // 创建人
+  updatedBy Int?     // 修改人
+  
+  // 关联关系
+  creator   User?    @relation("NewsCreatedBy", fields: [createdBy], references: [id])
+  updater   User?    @relation("NewsUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("news")
+}
+
+// 用户表
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String   // 加密后的密码
+  roleType  String   @default("user") // admin, user
+  name      String?  // 真实姓名
+  avatar    String?  // 头像
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 反向关联关系
+  createdPIs          PI[]          @relation("PICreatedBy")
+  updatedPIs          PI[]          @relation("PIUpdatedBy")
+  createdResearchers  Researcher[]  @relation("ResearcherCreatedBy")
+  updatedResearchers  Researcher[]  @relation("ResearcherUpdatedBy")
+  createdGraduates    Graduate[]    @relation("GraduateCreatedBy")
+  updatedGraduates    Graduate[]    @relation("GraduateUpdatedBy")
+  createdPublications Publication[] @relation("PublicationCreatedBy")
+  updatedPublications Publication[] @relation("PublicationUpdatedBy")
+  createdTools        Tool[]        @relation("ToolCreatedBy")
+  updatedTools        Tool[]        @relation("ToolUpdatedBy")
+  createdNews         News[]        @relation("NewsCreatedBy")
+  updatedNews         News[]        @relation("NewsUpdatedBy")
+
+  @@map("users")
+}

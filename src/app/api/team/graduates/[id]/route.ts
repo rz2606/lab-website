@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+
+// 获取单个毕业生
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const graduate = await db.graduate.findUnique({
+      where: { id: parseInt(params.id) }
+    })
+
+    if (!graduate) {
+      return NextResponse.json(
+        { error: '毕业生不存在' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(graduate)
+  } catch (error) {
+    console.error('获取毕业生失败:', error)
+    return NextResponse.json(
+      { error: '获取毕业生失败' },
+      { status: 500 }
+    )
+  }
+}
+
+// 更新毕业生
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  // 验证管理员权限
+  const authResult = await requireAdmin(request)
+  if (authResult) return authResult
+  
+  try {
+    const body = await request.json()
+    const { name, position, email, company } = body
+    const currentUserId = getCurrentUserId(request)
+
+    const graduate = await db.graduate.update({
+      where: { id: parseInt(params.id) },
+      data: {
+        name,
+        position,
+        email,
+        company,
+        updatedBy: currentUserId
+      }
+    })
+
+    return NextResponse.json(graduate)
+  } catch (error) {
+    console.error('更新毕业生失败:', error)
+    return NextResponse.json(
+      { error: '更新毕业生失败' },
+      { status: 500 }
+    )
+  }
+}
+
+// 删除毕业生
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await db.graduate.delete({
+      where: { id: parseInt(params.id) }
+    })
+
+    return NextResponse.json({ message: '毕业生删除成功' })
+  } catch (error) {
+    console.error('删除毕业生失败:', error)
+    return NextResponse.json(
+      { error: '删除毕业生失败' },
+      { status: 500 }
+    )
+  }
+}
