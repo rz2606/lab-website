@@ -35,7 +35,7 @@ services:
       - DATABASE_URL=mysql://lab_user:lab_password@mysql:3306/lab_website
       - NEXTAUTH_SECRET=your-secret-key-here
       - NEXTAUTH_URL=http://localhost:3000
-      - SYSTEM_INSTALLED=true
+      - SYSTEM_INSTALLED=false
     ports:
       - "3001:3000"
     depends_on:
