@@ -83,7 +83,7 @@ export async function isDatabaseConfigured(): Promise<boolean> {
 export async function getInstallationInfo(): Promise<any> {
   try {
     const projectRoot = process.cwd()
-    const installFlagPath = path.join(projectRoot, '.installed1')
+    const installFlagPath = path.join(projectRoot, '.installed')
     
     const installFlag = await fs.readFile(installFlagPath, 'utf8')
     return JSON.parse(installFlag)
