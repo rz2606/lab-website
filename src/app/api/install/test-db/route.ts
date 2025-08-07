@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       await serverConnection.execute('SELECT 1')
       
       // 检查数据库是否存在
+      const escapedDbName = mysql.escape(config.database)
       const [databases] = await serverConnection.execute(
-        'SHOW DATABASES LIKE ?',
-        [config.database]
-      ) as any[]
+        `SHOW DATABASES LIKE ${escapedDbName}`
+      ) as unknown[]
       
       // 如果数据库不存在，则创建它
       if (databases.length === 0) {
@@ -80,27 +80,28 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
     
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string }
     console.error('数据库连接测试失败:', error)
     
     let errorMessage = '数据库连接失败'
     
-    if (error.code === 'ECONNREFUSED') {
+    if (err.code === 'ECONNREFUSED') {
       errorMessage = '无法连接到数据库服务器，请检查主机和端口'
-    } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+    } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
       errorMessage = '数据库用户名或密码错误'
-    } else if (error.code === 'ER_BAD_DB_ERROR') {
+    } else if (err.code === 'ER_BAD_DB_ERROR') {
       errorMessage = '指定的数据库不存在'
-    } else if (error.code === 'ER_DBACCESS_DENIED_ERROR') {
+    } else if (err.code === 'ER_DBACCESS_DENIED_ERROR') {
       errorMessage = '用户没有创建数据库的权限，请联系数据库管理员'
-    } else if (error.code === 'ER_DB_CREATE_EXISTS') {
+    } else if (err.code === 'ER_DB_CREATE_EXISTS') {
       errorMessage = '数据库已存在'
-    } else if (error.code === 'ETIMEDOUT') {
+    } else if (err.code === 'ETIMEDOUT') {
       errorMessage = '数据库连接超时'
-    } else if (error.message && error.message.includes('CREATE')) {
+    } else if (err.message && err.message.includes('CREATE')) {
       errorMessage = '创建数据库失败，请检查用户权限'
-    } else if (error.message) {
-      errorMessage = error.message
+    } else if (err.message) {
+      errorMessage = err.message
     }
     
     return NextResponse.json(
