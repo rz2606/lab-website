@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     } else if (error.message.includes('Access denied')) {
       errorMessage = '数据库访问被拒绝，请检查用户名和密码'
     } else if (error.message.includes('Unknown database')) {
-      errorMessage = '指定的数据库不存在，请先创建数据库'
+      errorMessage = '数据库连接失败，请检查数据库配置是否正确'
     } else if (error.message) {
       errorMessage = error.message
     }

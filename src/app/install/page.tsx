@@ -268,7 +268,7 @@ export default function InstallPage() {
                 id="database"
                 value={dbConfig.database}
                 onChange={(e) => handleDbConfigChange('database', e.target.value)}
-                placeholder="lab_website"
+                placeholder="lab_website（如不存在将自动创建）"
               />
             </div>
             <Button 
@@ -353,6 +353,7 @@ export default function InstallPage() {
                 </p>
                 <ul className="text-left space-y-1 text-sm text-gray-600">
                   <li>• 保存数据库配置</li>
+                  <li>• 自动创建数据库（如果不存在）</li>
                   <li>• 创建数据库表结构</li>
                   <li>• 初始化基础数据</li>
                   <li>• 创建管理员账户</li>
