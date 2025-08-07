@@ -45,15 +45,29 @@ export async function PUT(
     const { name, position, email, company } = body
     const currentUserId = getCurrentUserId(request)
 
+    // 构建更新数据
+    const updateData: Record<string, unknown> = {
+      name,
+      position,
+      email,
+      company
+    }
+    
+    // 验证用户ID是否存在，避免外键约束违反
+    if (currentUserId) {
+      const userExists = await db.user.findUnique({
+        where: { id: currentUserId },
+        select: { id: true }
+      })
+      
+      if (userExists) {
+        updateData.updatedBy = currentUserId
+      }
+    }
+
     const graduate = await db.graduate.update({
       where: { id: parseInt(id) },
-      data: {
-        name,
-        position,
-        email,
-        company,
-        updatedBy: currentUserId
-      }
+      data: updateData
     })
 
     return NextResponse.json(graduate)

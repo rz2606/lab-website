@@ -45,17 +45,31 @@ export async function PUT(
     const { title, authors, journal, year, type, content } = body
     const currentUserId = getCurrentUserId(request)
 
+    // 构建更新数据
+    const updateData: Record<string, unknown> = {
+      title,
+      authors,
+      journal,
+      year: year ? parseInt(year) : undefined,
+      type,
+      content
+    }
+    
+    // 验证用户ID是否存在，避免外键约束违反
+    if (currentUserId) {
+      const userExists = await db.user.findUnique({
+        where: { id: currentUserId },
+        select: { id: true }
+      })
+      
+      if (userExists) {
+        updateData.updatedBy = currentUserId
+      }
+    }
+
     const publication = await db.publication.update({
       where: { id: parseInt(id) },
-      data: {
-        title,
-        authors,
-        journal,
-        year: year ? parseInt(year) : undefined,
-        type,
-        content,
-        updatedBy: currentUserId
-      }
+      data: updateData
     })
 
     return NextResponse.json(publication)

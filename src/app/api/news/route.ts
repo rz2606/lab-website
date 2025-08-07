@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+import { safeSetCreatedAndUpdatedBy } from '@/lib/user-validation'
 
 export async function GET() {
   try {
@@ -48,10 +49,8 @@ export async function POST(request: NextRequest) {
       isPinned: isPinned || false
     }
     
-    if (currentUserId) {
-      createData.createdBy = currentUserId
-      createData.updatedBy = currentUserId
-    }
+    // 安全地设置createdBy和updatedBy字段
+    await safeSetCreatedAndUpdatedBy(createData, currentUserId)
 
     const news = await db.news.create({
       data: createData

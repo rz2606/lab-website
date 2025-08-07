@@ -70,13 +70,20 @@ export async function PUT(
       isActive
     }
     
-    // 只有在有有效用户ID时才包含updatedBy
+    // 验证用户ID是否存在，避免外键约束违反
     if (currentUserId) {
-      updateData.updatedBy = currentUserId
+      const userExists = await db.user.findUnique({
+        where: { id: currentUserId },
+        select: { id: true }
+      })
+      
+      if (userExists) {
+        updateData.updatedBy = currentUserId
+      }
     }
 
-    // 如果提供了新密码，则加密后更新
-    if (password) {
+    // 如果提供了新密码且不为空，则加密后更新
+    if (password && password.trim() !== '') {
       updateData.password = await bcrypt.hash(password, 12)
     }
 

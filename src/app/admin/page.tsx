@@ -301,6 +301,8 @@ export default function AdminPage() {
       const url = modalType === 'create' ? '/api/users' : `/api/users/${editingItem?.id}`
       const method = modalType === 'create' ? 'POST' : 'PUT'
       
+      console.log('提交用户数据:', { url, method, userData, editingItem })
+      
       const response = await apiRequest(url, {
         method,
         body: JSON.stringify(userData)
@@ -311,11 +313,13 @@ export default function AdminPage() {
         fetchData('users')
         alert(modalType === 'create' ? '用户创建成功' : '用户更新成功')
       } else {
-        alert('操作失败')
+        const errorData = await response.text()
+        console.error('API响应错误:', { status: response.status, statusText: response.statusText, errorData })
+        alert(`操作失败: ${response.status} ${response.statusText}${errorData ? ' - ' + errorData : ''}`)
       }
     } catch (error) {
       console.error('提交失败:', error)
-      alert('操作失败')
+      alert(`操作失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 
@@ -1093,7 +1097,39 @@ function UserForm({ user, onSubmit, onCancel, isEditing }: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    
+    // 基本验证
+    if (!formData.username.trim()) {
+      alert('用户名不能为空')
+      return
+    }
+    
+    if (!formData.email.trim()) {
+      alert('邮箱不能为空')
+      return
+    }
+    
+    // 邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      alert('请输入有效的邮箱地址')
+      return
+    }
+    
+    // 创建模式下密码必填
+    if (!isEditing && !formData.password.trim()) {
+      alert('密码不能为空')
+      return
+    }
+    
+    // 提交数据，编辑模式下如果密码为空则不包含密码字段
+    const submitData = { ...formData }
+    if (isEditing && !formData.password.trim()) {
+      delete submitData.password
+    }
+    
+    console.log('表单提交数据:', submitData)
+    onSubmit(submitData)
   }
 
   return (

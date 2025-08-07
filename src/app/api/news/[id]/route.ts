@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+import { safeSetUpdatedBy } from '@/lib/user-validation'
 
 // 获取单个新闻
 export async function GET(
@@ -54,9 +55,8 @@ export async function PUT(
       isPinned: isPinned !== undefined ? isPinned : false
     }
     
-    if (currentUserId) {
-      updateData.updatedBy = currentUserId
-    }
+    // 安全地设置updatedBy字段
+    await safeSetUpdatedBy(updateData, currentUserId)
 
     const news = await db.news.update({
       where: { id: parseInt(id) },
