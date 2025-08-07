@@ -10,6 +10,9 @@ WORKDIR /app
 # 安装 git（用于克隆仓库）
 RUN apk add --no-cache git
 
+# 清理工作空间的所有文件（确保构建环境干净）
+RUN rm -rf /app/* /app/.[^.]* /app/..?* 2>/dev/null || true
+
 # 克隆项目代码
 RUN git clone https://github.com/365code365/lab-website.git .
 
