@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,8 @@ export default function InstallPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [checkingInstallation, setCheckingInstallation] = useState(true)
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false)
   
   const [dbConfig, setDbConfig] = useState<DatabaseConfig>({
     host: 'localhost',
@@ -49,6 +51,31 @@ export default function InstallPage() {
   })
   
   const [generateSeedData, setGenerateSeedData] = useState(false)
+
+  // 检查系统是否已安装
+  useEffect(() => {
+    const checkInstallationStatus = async () => {
+      try {
+        const response = await fetch('/api/install/check-status')
+        const result = await response.json()
+        
+        if (result.installed) {
+          setAlreadyInstalled(true)
+          // 3秒后自动重定向到主页
+          setTimeout(() => {
+            router.push('/')
+          }, 3000)
+        }
+      } catch (error) {
+        console.error('检查安装状态失败:', error)
+        // 如果检查失败，继续显示安装页面
+      } finally {
+        setCheckingInstallation(false)
+      }
+    }
+
+    checkInstallationStatus()
+  }, [router])
 
   const steps = [
     { id: 1, title: '数据库配置', icon: Database, description: '配置数据库连接信息' },
@@ -390,6 +417,59 @@ export default function InstallPage() {
       default:
         return null
     }
+  }
+
+  // 如果正在检查安装状态，显示加载界面
+  if (checkingInstallation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500 mb-4" />
+          <p className="text-gray-600">正在检查系统安装状态...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 如果系统已安装，显示已安装提示
+  if (alreadyInstalled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader className="text-center">
+              <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+              <CardTitle className="text-2xl text-green-700">系统已安装</CardTitle>
+              <CardDescription>
+                Lab Website 系统已经安装完成，正在为您跳转到主页...
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  <p>3秒后自动跳转，或者您可以：</p>
+                </div>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => router.push('/')}
+                    className="w-full"
+                  >
+                    立即前往主页
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/login')}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    前往登录页面
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(envPath, envContent, 'utf8')
     
     // 创建安装完成标记文件
-    const installFlagPath = path.join(projectRoot, '.installed')
+    const installFlagPath = path.join(projectRoot, '.installed1')
     const installInfo = {
       installedAt: new Date().toISOString(),
       version: '1.0.0',

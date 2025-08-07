@@ -10,7 +10,7 @@ export async function isSystemInstalled(): Promise<boolean> {
     const projectRoot = process.cwd()
     
     // 检查.installed文件是否存在
-    const installFlagPath = path.join(projectRoot, '.installed')
+    const installFlagPath = path.join(projectRoot, '.installed1')
     try {
       const installFlag = await fs.readFile(installFlagPath, 'utf8')
       const installInfo = JSON.parse(installFlag)
@@ -83,7 +83,7 @@ export async function isDatabaseConfigured(): Promise<boolean> {
 export async function getInstallationInfo(): Promise<any> {
   try {
     const projectRoot = process.cwd()
-    const installFlagPath = path.join(projectRoot, '.installed')
+    const installFlagPath = path.join(projectRoot, '.installed1')
     
     const installFlag = await fs.readFile(installFlagPath, 'utf8')
     return JSON.parse(installFlag)
