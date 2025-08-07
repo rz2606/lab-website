@@ -47,6 +47,8 @@ export default function InstallPage() {
     confirmPassword: '',
     name: '系统管理员'
   })
+  
+  const [generateSeedData, setGenerateSeedData] = useState(false)
 
   const steps = [
     { id: 1, title: '数据库配置', icon: Database, description: '配置数据库连接信息' },
@@ -158,19 +160,40 @@ export default function InstallPage() {
       }
       
       // 第三步：创建管理员账户
+      const adminData = {
+        username: adminUser.username,
+        email: adminUser.email,
+        password: adminUser.password,
+        name: adminUser.name
+      }
+      
       const adminResponse = await fetch('/api/install/create-admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(adminUser)
+        body: JSON.stringify(adminData)
       })
       
       if (!adminResponse.ok) {
         throw new Error('创建管理员账户失败')
       }
       
-      // 第四步：标记安装完成
+      // 第四步：生成测试数据（可选）
+      if (generateSeedData) {
+        const seedResponse = await fetch('/api/install/seed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!seedResponse.ok) {
+          throw new Error('生成测试数据失败')
+        }
+      }
+      
+      // 第五步：标记安装完成
       const completeResponse = await fetch('/api/install/complete', {
         method: 'POST',
         headers: {
@@ -322,18 +345,34 @@ export default function InstallPage() {
       case 3:
         return (
           <div className="space-y-4 text-center">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">准备安装系统</h3>
-              <p className="text-gray-600">
-                系统将执行以下操作：
-              </p>
-              <ul className="text-left space-y-1 text-sm text-gray-600">
-                <li>• 保存数据库配置</li>
-                <li>• 创建数据库表结构</li>
-                <li>• 初始化基础数据</li>
-                <li>• 创建管理员账户</li>
-                <li>• 完成系统安装</li>
-              </ul>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">准备安装系统</h3>
+                <p className="text-gray-600">
+                  系统将执行以下操作：
+                </p>
+                <ul className="text-left space-y-1 text-sm text-gray-600">
+                  <li>• 保存数据库配置</li>
+                  <li>• 创建数据库表结构</li>
+                  <li>• 初始化基础数据</li>
+                  <li>• 创建管理员账户</li>
+                  {generateSeedData && <li>• 生成测试数据</li>}
+                  <li>• 完成系统安装</li>
+                </ul>
+              </div>
+              
+              <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="generateSeedData"
+                  checked={generateSeedData}
+                  onChange={(e) => setGenerateSeedData(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="generateSeedData" className="text-sm font-medium text-gray-700">
+                  生成测试数据（包含示例用户、研究人员、发表论文等数据）
+                </label>
+              </div>
             </div>
             <Button 
               onClick={performInstallation} 

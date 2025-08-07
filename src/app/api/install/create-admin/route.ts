@@ -15,10 +15,26 @@ export async function POST(request: NextRequest) {
   try {
     const adminUser: AdminUser = await request.json()
     
+    // 添加调试日志
+    console.log('收到创建管理员请求，数据:', {
+      username: adminUser.username,
+      email: adminUser.email,
+      name: adminUser.name,
+      hasPassword: !!adminUser.password,
+      passwordLength: adminUser.password?.length || 0
+    })
+    
     // 验证必填字段
     if (!adminUser.username || !adminUser.email || !adminUser.password || !adminUser.name) {
+      const missingFields = []
+      if (!adminUser.username) missingFields.push('用户名')
+      if (!adminUser.email) missingFields.push('邮箱')
+      if (!adminUser.password) missingFields.push('密码')
+      if (!adminUser.name) missingFields.push('姓名')
+      
+      console.log('验证失败 - 缺少必填字段:', missingFields)
       return NextResponse.json(
-        { error: '请填写所有必填字段' },
+        { error: `请填写所有必填字段: ${missingFields.join(', ')}` },
         { status: 400 }
       )
     }
@@ -26,6 +42,7 @@ export async function POST(request: NextRequest) {
     // 验证邮箱格式
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(adminUser.email)) {
+      console.log('验证失败 - 邮箱格式无效:', adminUser.email)
       return NextResponse.json(
         { error: '请输入有效的邮箱地址' },
         { status: 400 }
@@ -34,6 +51,7 @@ export async function POST(request: NextRequest) {
     
     // 验证密码长度
     if (adminUser.password.length < 6) {
+      console.log('验证失败 - 密码长度不足:', adminUser.password.length)
       return NextResponse.json(
         { error: '密码长度至少6位' },
         { status: 400 }
@@ -46,10 +64,26 @@ export async function POST(request: NextRequest) {
     })
     
     if (existingUserByUsername) {
-      return NextResponse.json(
-        { error: '用户名已存在' },
-        { status: 400 }
-      )
+      console.log('管理员用户已存在，跳过创建:', adminUser.username)
+      // 如果管理员用户已存在，返回成功（避免重复安装时的错误）
+      if (existingUserByUsername.roleType === 'admin') {
+        return NextResponse.json({
+          message: '管理员账户已存在，跳过创建',
+          user: {
+            id: existingUserByUsername.id,
+            username: existingUserByUsername.username,
+            email: existingUserByUsername.email,
+            name: existingUserByUsername.name,
+            roleType: existingUserByUsername.roleType
+          }
+        })
+      } else {
+        console.log('验证失败 - 用户名已存在但不是管理员:', adminUser.username)
+        return NextResponse.json(
+          { error: '用户名已存在但不是管理员账户' },
+          { status: 400 }
+        )
+      }
     }
     
     // 检查邮箱是否已存在
@@ -58,6 +92,7 @@ export async function POST(request: NextRequest) {
     })
     
     if (existingUserByEmail) {
+      console.log('验证失败 - 邮箱已被使用:', adminUser.email)
       return NextResponse.json(
         { error: '邮箱已被使用' },
         { status: 400 }
@@ -88,6 +123,12 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    console.log('管理员账户创建成功:', {
+      id: newAdmin.id,
+      username: newAdmin.username,
+      email: newAdmin.email
+    })
+    
     return NextResponse.json(
       { 
         success: true, 
@@ -98,7 +139,12 @@ export async function POST(request: NextRequest) {
     )
     
   } catch (error: any) {
-    console.error('创建管理员账户失败:', error)
+    console.error('创建管理员账户失败:', {
+      error: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    })
     
     let errorMessage = '创建管理员账户失败'
     
