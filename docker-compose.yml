@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: lab-website-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: lab_website
+      MYSQL_USER: lab_user
+      MYSQL_PASSWORD: lab_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - lab-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Lab Website 应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lab-website-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://lab_user:lab_password@mysql:3306/lab_website
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
+      - SYSTEM_INSTALLED=false
+    ports:
+      - "3001:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lab-network
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prisma Studio (可选，用于数据库管理)
+  prisma-studio:
+    image: node:18-alpine
+    container_name: lab-website-prisma-studio
+    working_dir: /app
+    command: sh -c "npm install prisma && npx prisma studio --hostname 0.0.0.0"
+    environment:
+      - DATABASE_URL=mysql://lab_user:lab_password@mysql:3306/lab_website
+    ports:
+      - "5555:5555"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lab-network
+    volumes:
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+    profiles:
+      - tools
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  lab-network:
+    driver: bridge
