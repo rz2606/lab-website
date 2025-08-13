@@ -18,8 +18,9 @@ const Navigation = () => {
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
+        <div className="flex justify-center items-center h-16 relative">
+          {/* Logo - positioned absolutely to the left */}
+          <div className="absolute left-0 flex items-center">
             <Link href="/" className="flex-shrink-0">
               <h1 className="text-xl font-bold text-blue-600">
                 智能化药物研发加速器
@@ -27,7 +28,7 @@ const Navigation = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - centered */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
               <Link
@@ -38,22 +39,10 @@ const Navigation = () => {
                 {item.name}
               </Link>
             ))}
-            <Link
-              href="/login"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              登录
-            </Link>
-            <Link
-              href="/admin"
-              className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 text-sm font-medium rounded-md transition-colors"
-            >
-              管理后台
-            </Link>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile menu button - positioned absolutely to the right */}
+          <div className="absolute right-0 md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-gray-700 hover:text-blue-600 focus:outline-none focus:text-blue-600"

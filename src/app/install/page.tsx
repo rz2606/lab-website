@@ -456,13 +456,6 @@ export default function InstallPage() {
                   >
                     立即前往主页
                   </Button>
-                  <Button 
-                    onClick={() => router.push('/login')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    前往登录页面
-                  </Button>
                 </div>
               </div>
             </CardContent>
