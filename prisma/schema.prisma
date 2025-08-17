@@ -56,11 +56,19 @@ model Researcher {
 // 毕业生
 model Graduate {
   id             Int      @id @default(autoincrement())
-  name           String
-  position       String?  // 职位
-  email          String?
-  company        String?  // 单位
-  graduationYear Int?     // 毕业年份
+  serialNumber   String?  // 序号
+  name           String   // 姓名
+  enrollmentDate String?  // 入学时间
+  graduationDate String?  // 毕业时间
+  advisor        String?  // 指导老师
+  degree         String?  // 学位
+  discipline     String?  // 学科
+  thesisTitle    String?  @db.Text // 论文题目
+  remarks        String?  @db.Text // 备注
+  position       String?  // 职位 (保留原有字段)
+  email          String?  // 邮箱 (保留原有字段)
+  company        String?  // 单位 (保留原有字段)
+  graduationYear Int?     // 毕业年份 (保留原有字段)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   createdBy      Int?     // 创建人
@@ -71,6 +79,27 @@ model Graduate {
   updater        User?    @relation("GraduateUpdatedBy", fields: [updatedBy], references: [id])
 
   @@map("graduates")
+}
+
+// 获奖名单
+model Award {
+  id             Int      @id @default(autoincrement())
+  serialNumber   String?  // 序号
+  awardee        String   // 获奖人员
+  awardDate      String?  // 获奖时间
+  awardName      String?  @db.Text // 获奖名称及等级
+  advisor        String?  // 指导老师
+  remarks        String?  @db.Text // 备注
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      Int?     // 创建人
+  updatedBy      Int?     // 修改人
+  
+  // 关联关系
+  creator        User?    @relation("AwardCreatedBy", fields: [createdBy], references: [id])
+  updater        User?    @relation("AwardUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("awards")
 }
 
 // 发表成果
@@ -157,6 +186,8 @@ model User {
   updatedResearchers  Researcher[]  @relation("ResearcherUpdatedBy")
   createdGraduates    Graduate[]    @relation("GraduateCreatedBy")
   updatedGraduates    Graduate[]    @relation("GraduateUpdatedBy")
+  createdAwards       Award[]       @relation("AwardCreatedBy")
+  updatedAwards       Award[]       @relation("AwardUpdatedBy")
   createdPublications Publication[] @relation("PublicationCreatedBy")
   updatedPublications Publication[] @relation("PublicationUpdatedBy")
   createdTools        Tool[]        @relation("ToolCreatedBy")

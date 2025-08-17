@@ -12,6 +12,7 @@ const Navigation = () => {
     { name: '团队成员', href: '/team' },
     { name: '发表成果', href: '/publications' },
     { name: '程序开发', href: '/tools' },
+    { name: '获奖名单', href: '/awards' },
     { name: '新闻动态', href: '/news' },
   ]
 

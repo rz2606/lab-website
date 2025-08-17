@@ -1,12 +1,57 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, FileText, Wrench, Newspaper, UserCheck, Plus, Edit, Trash2, Search, Lock, AlertTriangle } from 'lucide-react'
+import { Users, FileText, Wrench, Newspaper, UserCheck, Plus, Edit, Trash2, Search, Lock, AlertTriangle, Upload, Award } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import TagSelector from '@/components/TagSelector'
 import { getCurrentUser, isAdmin, isAuthenticated, clearAuth, getToken } from '@/lib/auth'
 import dynamic from 'next/dynamic'
+
+// 错误边界组件
+class ErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Admin页面错误:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
+              <h2 className="text-xl font-semibold text-gray-900">页面加载错误</h2>
+            </div>
+            <p className="text-gray-600 mb-4">
+              页面遇到了一个错误，可能是由于缓存问题导致的。请尝试刷新页面。
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 
 // 动态导入富文本编辑器，避免SSR问题
 const MDEditor = dynamic(
@@ -84,7 +129,21 @@ interface TeamMember {
   graduationYear?: number
 }
 
-export default function AdminPage() {
+// 获奖名单接口
+interface AwardWinner {
+  id: number
+  name: string
+  awardName: string
+  awardLevel: string
+  awardYear: number
+  awardCategory: string
+  organization: string
+  description?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+function AdminPage() {
   const router = useRouter()
   const [authChecked, setAuthChecked] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -96,12 +155,42 @@ export default function AdminPage() {
   const [tools, setTools] = useState<Tool[]>([])
   const [news, setNews] = useState<News[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [awards, setAwards] = useState<AwardWinner[]>([])
   const [selectedMemberType, setSelectedMemberType] = useState<'pi' | 'researcher' | 'graduate'>('pi')
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<'create' | 'edit'>('create')
   const [editingItem, setEditingItem] = useState<any>(null)
+  
+  // Excel导入相关状态
+  const graduateFileInputRef = useRef<HTMLInputElement>(null)
+  const awardFileInputRef = useRef<HTMLInputElement>(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importResult, setImportResult] = useState<{success: boolean, message: string, count?: number} | null>(null)
+  
+  // 强制刷新状态
+  const [forceRefresh, setForceRefresh] = useState(0)
+  
+  // 获奖名单表单状态
+  const [showAwardForm, setShowAwardForm] = useState(false)
+  const [editingAward, setEditingAward] = useState<AwardWinner | null>(null)
+  
+  // 确保refs正确初始化和调试信息
+  useEffect(() => {
+    // 调试信息：检查refs初始化状态
+    console.log('Admin页面Refs初始化状态:', {
+      awardFileInputRef: !!awardFileInputRef.current,
+      graduateFileInputRef: !!graduateFileInputRef.current,
+      forceRefresh,
+      timestamp: new Date().toISOString()
+    })
+    
+    // 如果refs未正确初始化，强制重新渲染
+    if (!awardFileInputRef.current || !graduateFileInputRef.current) {
+      console.warn('检测到refs未正确初始化，将在下次渲染周期重试')
+    }
+  }, [forceRefresh])
 
   // 权限检查
   useEffect(() => {
@@ -209,6 +298,9 @@ export default function AdminPage() {
         case 'news':
           endpoint = '/api/news'
           break
+        case 'awards':
+          endpoint = '/api/awards'
+          break
       }
       
       const response = await apiRequest(endpoint)
@@ -228,6 +320,9 @@ export default function AdminPage() {
           // 确保data是数组，如果不是则设置为空数组
           setNews(Array.isArray(data) ? data : [])
           break
+        case 'awards':
+          setAwards(Array.isArray(data) ? data : [])
+          break
       }
     } catch (error) {
       console.error(`获取${type}数据失败:`, error)
@@ -244,6 +339,9 @@ export default function AdminPage() {
           break
         case 'news':
           setNews([])
+          break
+        case 'awards':
+          setAwards([])
           break
       }
     } finally {
@@ -432,6 +530,178 @@ export default function AdminPage() {
     }
   }
 
+  // 处理获奖名单表单提交
+  const handleAwardSubmit = async (awardData: any) => {
+    try {
+      const url = editingAward ? `/api/awards/${editingAward.id}` : '/api/awards'
+      const method = editingAward ? 'PUT' : 'POST'
+      
+      const response = await apiRequest(url, {
+        method,
+        body: JSON.stringify(awardData)
+      })
+      
+      if (response.ok) {
+        setShowAwardForm(false)
+        setEditingAward(null)
+        fetchData('awards')
+        alert(editingAward ? '获奖记录更新成功' : '获奖记录创建成功')
+      } else {
+        alert('操作失败')
+      }
+    } catch (error) {
+      console.error('提交失败:', error)
+      alert('操作失败')
+    }
+  }
+
+  // 获奖名单CRUD操作
+  const handleCreateAward = () => {
+    setEditingAward(null)
+    setShowAwardForm(true)
+  }
+
+  const handleEditAward = (award: AwardWinner) => {
+    setEditingAward(award)
+    setShowAwardForm(true)
+  }
+
+  const handleDeleteAward = async (id: number) => {
+    if (!confirm('确定要删除这条获奖记录吗？')) return
+    
+    try {
+      const response = await apiRequest(`/api/awards/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        fetchData('awards')
+        alert('删除成功')
+      } else {
+        alert('删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      alert('删除失败')
+    }
+  }
+
+  // 处理毕业生Excel文件上传
+  const handleGraduateFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      alert('请选择Excel文件（.xlsx或.xls格式）')
+      return
+    }
+
+    setImportLoading(true)
+    setImportResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const token = getToken()
+      const response = await fetch('/api/team/graduates/import', {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setImportResult({
+          success: true,
+          message: `成功导入 ${result.count} 条毕业生记录`,
+          count: result.count
+        })
+        // 刷新团队数据
+        fetchData('team')
+      } else {
+        setImportResult({
+          success: false,
+          message: result.error || '导入失败'
+        })
+      }
+    } catch (error) {
+      console.error('导入失败:', error)
+      setImportResult({
+        success: false,
+        message: '导入失败，请检查文件格式和网络连接'
+      })
+    } finally {
+      setImportLoading(false)
+      // 清空文件输入
+      if (graduateFileInputRef.current) {
+        graduateFileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // 处理获奖名单Excel文件上传
+  const handleAwardFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      alert('请选择Excel文件（.xlsx或.xls格式）')
+      return
+    }
+
+    setImportLoading(true)
+    setImportResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const token = getToken()
+      const response = await fetch('/api/awards/import', {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setImportResult({
+          success: true,
+          message: `成功导入 ${result.count} 条获奖记录`,
+          count: result.count
+        })
+        // 刷新获奖名单数据
+        fetchData('awards')
+      } else {
+        setImportResult({
+          success: false,
+          message: result.error || '导入失败'
+        })
+      }
+    } catch (error) {
+      console.error('导入失败:', error)
+      setImportResult({
+        success: false,
+        message: '导入失败，请检查文件格式和网络连接'
+      })
+    } finally {
+      setImportLoading(false)
+      // 清空文件输入
+      if (awardFileInputRef.current) {
+        awardFileInputRef.current.value = ''
+      }
+    }
+  }
+
   useEffect(() => {
     fetchData(activeTab)
   }, [activeTab])
@@ -441,7 +711,8 @@ export default function AdminPage() {
     { id: 'team', name: '团队管理', icon: UserCheck },
     { id: 'publications', name: '发表成果', icon: FileText },
     { id: 'tools', name: '开发工具', icon: Wrench },
-    { id: 'news', name: '新闻动态', icon: Newspaper }
+    { id: 'news', name: '新闻动态', icon: Newspaper },
+    { id: 'awards', name: '获奖名单', icon: Award }
   ]
 
   // 过滤团队成员
@@ -467,6 +738,8 @@ export default function AdminPage() {
         return renderToolTable()
       case 'news':
         return renderNewsTable()
+      case 'awards':
+        return renderAwardTable()
       default:
         return <div>选择一个管理模块</div>
     }
@@ -541,21 +814,41 @@ export default function AdminPage() {
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium text-gray-900">团队管理</h3>
-          <button 
-            onClick={handleCreate}
-            className={`px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 ${
-              selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi')
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                : 'bg-blue-600 text-white'
-            }`}
-            disabled={selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi')}
-          >
-            <Plus className="h-4 w-4" />
-            {selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi') 
-              ? '已有负责人' 
-              : '添加成员'
-            }
-          </button>
+          <div className="flex gap-2">
+            {selectedMemberType === 'graduate' && (
+              <>
+                <input
+                  type="file"
+                  ref={graduateFileInputRef}
+                  onChange={handleGraduateFileUpload}
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => graduateFileInputRef.current?.click()}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  导入Excel
+                </button>
+              </>
+            )}
+            <button 
+              onClick={handleCreate}
+              className={`px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 ${
+                selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi')
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-blue-600 text-white'
+              }`}
+              disabled={selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi')}
+            >
+              <Plus className="h-4 w-4" />
+              {selectedMemberType === 'pi' && teamMembers.some(member => member.type === 'pi') 
+                ? '已有负责人' 
+                : '添加成员'
+              }
+            </button>
+          </div>
         </div>
         
         {/* 类型选择器 */}
@@ -591,6 +884,44 @@ export default function AdminPage() {
             毕业生
           </button>
         </div>
+        
+        {/* 导入结果显示 */}
+        {selectedMemberType === 'graduate' && importResult && (
+          <div className={`mt-4 p-4 rounded-md ${
+            importResult.success 
+              ? 'bg-green-50 border border-green-200' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <div className="flex items-center">
+              {importResult.success ? (
+                <div className="text-green-600 mr-2">✓</div>
+              ) : (
+                <div className="text-red-600 mr-2">✗</div>
+              )}
+              <span className={`text-sm font-medium ${
+                importResult.success ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {importResult.message}
+              </span>
+              <button
+                onClick={() => setImportResult(null)}
+                className="ml-auto text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* 导入加载状态 */}
+        {selectedMemberType === 'graduate' && importLoading && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <span className="text-sm text-blue-800">正在导入Excel文件，请稍候...</span>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="overflow-x-auto">
@@ -908,39 +1239,40 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">管理后台</h1>
-            <div className="flex items-center gap-4">
-              {currentUser && (
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-gray-600">
-                    欢迎，<span className="font-medium">{currentUser.username}</span>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-100">
+        <div className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <h1 className="text-3xl font-bold text-gray-900">管理后台</h1>
+              <div className="flex items-center gap-4">
+                {currentUser && (
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-gray-600">
+                      欢迎，<span className="font-medium">{currentUser.username}</span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      退出登录
+                    </button>
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    退出登录
-                  </button>
+                )}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="搜索..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
-              )}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="搜索..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
               </div>
             </div>
           </div>
         </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
@@ -1075,7 +1407,185 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* 获奖名单管理模态框 */}
+      {showAwardForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {editingAward ? '编辑获奖记录' : '添加获奖记录'}
+              </h3>
+              <AwardForm 
+                award={editingAward}
+                onSubmit={handleAwardSubmit}
+                onCancel={() => setShowAwardForm(false)}
+                isEditing={!!editingAward}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </ErrorBoundary>
+  )
+
+  const renderAwardTable = () => (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200">
+        {/* 调试信息和强制刷新 */}
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-yellow-800">
+              <span>调试信息: awardFileInputRef状态 - {awardFileInputRef.current ? '已初始化' : '未初始化'}</span>
+            </div>
+            <button
+              onClick={() => {
+                setForceRefresh(prev => prev + 1)
+                window.location.reload()
+              }}
+              className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
+            >
+              强制刷新页面
+            </button>
+          </div>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">获奖名单管理</h3>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              ref={awardFileInputRef}
+              onChange={handleAwardFileUpload}
+              accept=".xlsx,.xls"
+              className="hidden"
+            />
+            <button
+              onClick={() => {
+                try {
+                  if (awardFileInputRef.current) {
+                    awardFileInputRef.current.click()
+                  } else {
+                    console.error('awardFileInputRef未初始化')
+                    alert('文件输入组件未正确初始化，请刷新页面重试')
+                  }
+                } catch (error) {
+                  console.error('点击文件输入时出错:', error)
+                  alert('操作失败，请刷新页面重试')
+                }
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              导入Excel
+            </button>
+            <button 
+              onClick={handleCreateAward}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              添加获奖记录
+            </button>
+          </div>
+        </div>
+        
+        {/* 导入结果显示 */}
+        {importResult && (
+          <div className={`mb-4 p-4 rounded-md ${
+            importResult.success 
+              ? 'bg-green-50 border border-green-200' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <div className="flex items-center">
+              {importResult.success ? (
+                <div className="text-green-600 mr-2">✓</div>
+              ) : (
+                <div className="text-red-600 mr-2">✗</div>
+              )}
+              <span className={`text-sm font-medium ${
+                importResult.success ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {importResult.message}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* 加载状态 */}
+        {importLoading && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <span className="text-sm font-medium text-blue-800">正在导入Excel文件...</span>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖项名称</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">获奖年份</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖项级别</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">颁奖机构</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {awards.map((award) => (
+              <tr key={award.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{award.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.awardName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.awardYear}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    award.awardLevel === '国家级' ? 'bg-red-100 text-red-800' :
+                    award.awardLevel === '省级' ? 'bg-yellow-100 text-yellow-800' :
+                    award.awardLevel === '市级' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {award.awardLevel}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.organization}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button 
+                    onClick={() => handleEditAward(award)}
+                    className="text-blue-600 hover:text-blue-900 mr-3"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteAward(award.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        
+        {awards.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-500 text-sm">暂无获奖记录</div>
+            <div className="text-gray-400 text-xs mt-1">点击"导入Excel"或"添加获奖记录"开始添加数据</div>
+          </div>
+        )}
+      </div>
     </div>
+  )
+} // AdminPage函数结束
+
+// 导出包装了ErrorBoundary的AdminPage组件
+export default function WrappedAdminPage() {
+  return (
+    <ErrorBoundary>
+      <AdminPage />
+    </ErrorBoundary>
   )
 }
 
@@ -1211,6 +1721,155 @@ function UserForm({ user, onSubmit, onCancel, isEditing }: {
         <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
           启用用户
         </label>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+        >
+          {isEditing ? '更新' : '创建'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+
+
+// 获奖记录表单组件
+function AwardForm({ award, onSubmit, onCancel, isEditing }: {
+  award?: AwardWinner | null
+  onSubmit: (awardData: Record<string, unknown>) => void
+  onCancel: () => void
+  isEditing: boolean
+}) {
+  const [formData, setFormData] = useState({
+    name: award?.name || '',
+    awardName: award?.awardName || '',
+    year: award?.year || new Date().getFullYear(),
+    level: award?.level || '',
+    organization: award?.organization || ''
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // 基本验证
+    if (!formData.name.trim()) {
+      alert('获奖者姓名不能为空')
+      return
+    }
+    
+    if (!formData.awardName.trim()) {
+      alert('奖项名称不能为空')
+      return
+    }
+    
+    if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 10) {
+      alert('请输入有效的年份')
+      return
+    }
+    
+    if (!formData.level.trim()) {
+      alert('奖项级别不能为空')
+      return
+    }
+    
+    if (!formData.organization.trim()) {
+      alert('颁奖机构不能为空')
+      return
+    }
+    
+    console.log('获奖记录表单提交数据:', formData)
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          获奖者姓名 *
+        </label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+          placeholder="请输入获奖者姓名"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          奖项名称 *
+        </label>
+        <input
+          type="text"
+          value={formData.awardName}
+          onChange={(e) => setFormData({...formData, awardName: e.target.value})}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+          placeholder="请输入奖项名称"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          获奖年份 *
+        </label>
+        <input
+          type="number"
+          value={formData.year}
+          onChange={(e) => setFormData({...formData, year: parseInt(e.target.value) || new Date().getFullYear()})}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+          min="1900"
+          max={new Date().getFullYear() + 10}
+          placeholder="请输入获奖年份"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          奖项级别 *
+        </label>
+        <select
+          value={formData.level}
+          onChange={(e) => setFormData({...formData, level: e.target.value})}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="">请选择奖项级别</option>
+          <option value="国际级">国际级</option>
+          <option value="国家级">国家级</option>
+          <option value="省部级">省部级</option>
+          <option value="市级">市级</option>
+          <option value="校级">校级</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          颁奖机构 *
+        </label>
+        <input
+          type="text"
+          value={formData.organization}
+          onChange={(e) => setFormData({...formData, organization: e.target.value})}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+          placeholder="请输入颁奖机构"
+        />
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
