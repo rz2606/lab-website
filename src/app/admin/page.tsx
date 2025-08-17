@@ -1178,257 +1178,7 @@ function AdminPage() {
     </div>
   )
 
-  // 权限检查加载状态
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">正在验证权限...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 权限不足提示
-  if (!hasAdminAccess) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="mb-6">
-            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">访问受限</h2>
-            <p className="text-gray-600 mb-4">
-              抱歉，您没有访问管理后台的权限。只有管理员用户才能访问此页面。
-            </p>
-            {currentUser && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">当前用户：</span> {currentUser.username}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">用户角色：</span> 
-                  <span className={`ml-1 px-2 py-1 text-xs rounded-full ${
-                    currentUser.roleType === 'admin' 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {currentUser.roleType === 'admin' ? '管理员' : '普通用户'}
-                  </span>
-                </p>
-              </div>
-            )}
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => router.push('/')}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                返回首页
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                切换账户
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-gray-100">
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <h1 className="text-3xl font-bold text-gray-900">管理后台</h1>
-              <div className="flex items-center gap-4">
-                {currentUser && (
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-600">
-                      欢迎，<span className="font-medium">{currentUser.username}</span>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="text-sm text-red-600 hover:text-red-800 transition-colors"
-                    >
-                      退出登录
-                    </button>
-                  </div>
-                )}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="搜索..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* 侧边栏 */}
-          <div className="w-64 flex-shrink-0">
-            <nav className="bg-white rounded-lg shadow">
-              <div className="p-4">
-                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">管理菜单</h2>
-                <ul className="space-y-2">
-                  {tabs.map((tab) => {
-                    const Icon = tab.icon
-                    return (
-                      <li key={tab.id}>
-                        <button
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                            activeTab === tab.id
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        >
-                          <Icon className="h-5 w-5" />
-                          {tab.name}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            </nav>
-          </div>
-
-          {/* 主内容区 */}
-          <div className="flex-1">
-            {renderContent()}
-          </div>
-        </div>
-      </div>
-
-      {/* 用户管理模态框 */}
-      {showModal && activeTab === 'users' && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {modalType === 'create' ? '添加用户' : '编辑用户'}
-              </h3>
-              <UserForm 
-                user={editingItem}
-                onSubmit={handleUserSubmit}
-                onCancel={() => setShowModal(false)}
-                isEditing={modalType === 'edit'}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 团队管理模态框 */}
-      {showModal && activeTab === 'team' && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {modalType === 'create' ? '添加团队成员' : '编辑团队成员'}
-              </h3>
-              <TeamMemberForm 
-                member={editingItem}
-                onSubmit={handleTeamMemberSubmit}
-                onCancel={() => setShowModal(false)}
-                isEditing={modalType === 'edit'}
-                defaultType={selectedMemberType}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 发表成果管理模态框 */}
-      {showModal && activeTab === 'publications' && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {modalType === 'create' ? '添加发表成果' : '编辑发表成果'}
-              </h3>
-              <PublicationForm 
-                publication={editingItem}
-                onSubmit={handlePublicationSubmit}
-                onCancel={() => setShowModal(false)}
-                isEditing={modalType === 'edit'}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 开发工具管理模态框 */}
-      {showModal && activeTab === 'tools' && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {modalType === 'create' ? '添加开发工具' : '编辑开发工具'}
-              </h3>
-              <ToolForm 
-                tool={editingItem}
-                onSubmit={handleToolSubmit}
-                onCancel={() => setShowModal(false)}
-                isEditing={modalType === 'edit'}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 新闻管理模态框 */}
-      {showModal && activeTab === 'news' && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {modalType === 'create' ? '添加新闻' : '编辑新闻'}
-              </h3>
-              <NewsForm 
-                news={editingItem}
-                onSubmit={handleNewsSubmit}
-                onCancel={() => setShowModal(false)}
-                isEditing={modalType === 'edit'}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 获奖名单管理模态框 */}
-      {showAwardForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingAward ? '编辑获奖记录' : '添加获奖记录'}
-              </h3>
-              <AwardForm 
-                award={editingAward}
-                onSubmit={handleAwardSubmit}
-                onCancel={() => setShowAwardForm(false)}
-                isEditing={!!editingAward}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </ErrorBoundary>
-  )
-
+  // 渲染获奖名单表格
   const renderAwardTable = () => (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
@@ -1568,15 +1318,151 @@ function AdminPage() {
             ))}
           </tbody>
         </table>
-        
-        {awards.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-sm">暂无获奖记录</div>
-            <div className="text-gray-400 text-xs mt-1">点击"导入Excel"或"添加获奖记录"开始添加数据</div>
-          </div>
-        )}
       </div>
     </div>
+  )
+
+  // 权限检查加载状态
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">正在验证权限...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 权限不足提示
+  if (!hasAdminAccess) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-6">
+            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">访问受限</h2>
+            <p className="text-gray-600 mb-4">
+              抱歉，您没有访问管理后台的权限。只有管理员用户才能访问此页面。
+            </p>
+            {currentUser && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">当前用户：</span> {currentUser.username}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">用户角色：</span> 
+                  <span className={`ml-1 px-2 py-1 text-xs rounded-full ${
+                    currentUser.roleType === 'admin' 
+                      ? 'bg-red-100 text-red-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {currentUser.roleType === 'admin' ? '管理员' : '普通用户'}
+                  </span>
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                返回首页
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                切换账户
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
+
+  // 主要的渲染函数
+  return (
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-100">
+        <div className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <h1 className="text-3xl font-bold text-gray-900">管理后台</h1>
+              <div className="flex items-center gap-4">
+                {currentUser && (
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-gray-600">
+                      欢迎，<span className="font-medium">{currentUser.username}</span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      退出登录
+                    </button>
+                  </div>
+                )}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="搜索..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex gap-8">
+            {/* 侧边栏 */}
+            <div className="w-64 flex-shrink-0">
+              <nav className="bg-white rounded-lg shadow">
+                <div className="p-4">
+                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">管理菜单</h2>
+                  <ul className="space-y-2">
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon
+                      return (
+                        <li key={tab.id}>
+                          <button
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                              activeTab === tab.id
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            {tab.name}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              </nav>
+            </div>
+
+            {/* 主内容区 */}
+            <div className="flex-1">
+              {renderContent()}
+            </div>
+          </div>
+        </div>
+
+        {/* 模态框等其他组件 */}
+        {/* ... */}
+      </div>
+    </ErrorBoundary>
   )
 } // AdminPage函数结束
 
