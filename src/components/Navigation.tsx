@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+<<<<<<< HEAD
 import { useState, useEffect } from 'react'
 import { Menu, X, User } from 'lucide-react'
 import { isAuthenticated } from '@/lib/auth'
@@ -13,6 +14,13 @@ const Navigation = () => {
   useEffect(() => {
     setIsLoggedIn(isAuthenticated())
   }, [])
+=======
+import { useState } from 'react'
+import { Menu, X } from 'lucide-react'
+
+const Navigation = () => {
+  const [isOpen, setIsOpen] = useState(false)
+>>>>>>> upstream/main
 
   const navItems = [
     { name: '首页', href: '/' },
@@ -25,8 +33,14 @@ const Navigation = () => {
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<<<<<<< HEAD
         <div className="flex justify-between h-16">
           <div className="flex items-center">
+=======
+        <div className="flex justify-center items-center h-16 relative">
+          {/* Logo - positioned absolutely to the left */}
+          <div className="absolute left-0 flex items-center">
+>>>>>>> upstream/main
             <Link href="/" className="flex-shrink-0">
               <h1 className="text-xl font-bold text-blue-600">
                 智能化药物研发加速器
@@ -34,6 +48,7 @@ const Navigation = () => {
             </Link>
           </div>
 
+<<<<<<< HEAD
           {/* Desktop Navigation - Centered */}
           <div className="hidden md:flex items-center justify-center flex-1">
             <div className="flex items-center space-x-8 mx-auto">
@@ -80,6 +95,23 @@ const Navigation = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
+=======
+          {/* Desktop Navigation - centered */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile menu button - positioned absolutely to the right */}
+          <div className="absolute right-0 md:hidden flex items-center">
+>>>>>>> upstream/main
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-gray-700 hover:text-blue-600 focus:outline-none focus:text-blue-600"
@@ -103,6 +135,7 @@ const Navigation = () => {
                   {item.name}
                 </Link>
               ))}
+<<<<<<< HEAD
               
               {!isLoggedIn ? (
                 <>
@@ -132,6 +165,8 @@ const Navigation = () => {
                   个人中心
                 </Link>
               )}
+=======
+>>>>>>> upstream/main
             </div>
           </div>
         )}
