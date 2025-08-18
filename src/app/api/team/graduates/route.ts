@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, position, email, company } = body
+    const { name, position, email, company, hasPaper } = body
     const currentUserId = getCurrentUserId(request)
 
     // 验证必填字段
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         position,
         email,
         company,
+        hasPaper,
         createdBy: currentUserId,
         updatedBy: currentUserId
       }

@@ -42,7 +42,7 @@ export async function PUT(
   
   try {
     const body = await request.json()
-    const { name, position, email, company } = body
+    const { name, position, email, company, hasPaper } = body
     const currentUserId = getCurrentUserId(request)
 
     // 构建更新数据
@@ -50,7 +50,8 @@ export async function PUT(
       name,
       position,
       email,
-      company
+      company,
+      hasPaper
     }
     
     // 验证用户ID是否存在，避免外键约束违反
