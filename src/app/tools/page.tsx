@@ -28,13 +28,22 @@ const ToolsPage = () => {
     try {
       const response = await fetch('/api/tools')
       if (response.ok) {
-        const data = await response.json()
-        setTools(data)
+        const result = await response.json()
+        // 处理分页格式的API响应，提取实际的tools数组
+        const toolsData = result.data || result
+        // 确保toolsData是数组格式
+        if (Array.isArray(toolsData)) {
+          setTools(toolsData)
+        } else {
+          console.error('API返回的数据格式不正确，期望数组格式')
+          setTools([])
+        }
       } else {
         console.error('获取工具数据失败')
       }
     } catch (error) {
       console.error('获取工具数据失败:', error)
+      setTools([])
     } finally {
       setLoading(false)
     }

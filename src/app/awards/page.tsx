@@ -35,12 +35,15 @@ const AwardsPage = () => {
       const response = await fetch('/api/awards')
       if (response.ok) {
         const data = await response.json()
-        setAwards(data)
+        // 处理分页数据格式，确保awards是数组
+        const awardsData = data.data || data
+        setAwards(Array.isArray(awardsData) ? awardsData : [])
       } else {
         console.error('获取获奖记录失败')
       }
     } catch (error) {
       console.error('获取获奖记录失败:', error)
+      setAwards([]) // 确保在错误情况下awards是空数组
     } finally {
       setLoading(false)
     }

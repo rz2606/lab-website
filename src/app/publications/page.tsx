@@ -24,7 +24,15 @@ const PublicationsPage = () => {
       const response = await fetch('/api/publications')
       if (response.ok) {
         const data = await response.json()
-        setPublications(data)
+        // 处理分页数据格式，提取实际的publications数组
+        if (data && Array.isArray(data.data)) {
+          setPublications(data.data)
+        } else if (Array.isArray(data)) {
+          setPublications(data)
+        } else {
+          console.error('API返回的数据格式不正确:', data)
+          setPublications([])
+        }
       }
     } catch (error) {
       console.error('获取发表成果失败:', error)
