@@ -10,7 +10,38 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
   
   try {
+    const { searchParams } = new URL(request.url)
+    
+    // 分页参数
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10')))
+    const skip = (page - 1) * limit
+    
+    // 搜索参数
+    const search = searchParams.get('search') || ''
+    
+    // 排序参数
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+    
+    // 构建查询条件
+    const where = search ? {
+      OR: [
+        { username: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+        { name: { contains: search, mode: 'insensitive' as const } }
+      ]
+    } : {}
+    
+    // 构建排序条件
+    const orderBy = { [sortBy]: sortOrder }
+    
+    // 获取总数
+    const total = await db.user.count({ where })
+    
+    // 获取用户列表
     const users = await db.user.findMany({
+      where,
       select: {
         id: true,
         username: true,
@@ -23,10 +54,27 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         updatedAt: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy,
+      skip,
+      take: limit
     })
-
-    return NextResponse.json(users)
+    
+    // 计算分页信息
+    const totalPages = Math.ceil(total / limit)
+    const hasNext = page < totalPages
+    const hasPrev = page > 1
+    
+    return NextResponse.json({
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev
+      }
+    })
   } catch (error) {
     console.error('获取用户列表失败:', error)
     return NextResponse.json(

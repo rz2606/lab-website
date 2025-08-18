@@ -3,15 +3,67 @@ import { db } from '@/lib/db'
 import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
 import { safeSetCreatedAndUpdatedBy } from '@/lib/user-validation'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const news = await db.news.findMany({
-      orderBy: [
-        { isPinned: 'desc' }, // 置顶新闻排在前面
-        { createdAt: 'desc' }  // 然后按创建时间倒序
+    const { searchParams } = new URL(request.url)
+    
+    // 分页参数
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10')))
+    const skip = (page - 1) * limit
+    
+    // 搜索参数
+    const search = searchParams.get('search') || ''
+    
+    // 排序参数
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+    
+    // 构建查询条件
+    const where = search ? {
+      OR: [
+        { title: { contains: search, mode: 'insensitive' as const } },
+        { content: { contains: search, mode: 'insensitive' as const } },
+        { summary: { contains: search, mode: 'insensitive' as const } }
       ]
+    } : {}
+    
+    // 构建排序条件 - 保持置顶新闻优先
+    const orderBy = sortBy === 'createdAt' ? [
+      { isPinned: 'desc' as const },
+      { createdAt: sortOrder as const }
+    ] : [
+      { isPinned: 'desc' as const },
+      { [sortBy]: sortOrder }
+    ]
+    
+    // 获取总数
+    const total = await db.news.count({ where })
+    
+    // 获取新闻列表
+    const news = await db.news.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit
     })
-    return NextResponse.json(news)
+    
+    // 计算分页信息
+    const totalPages = Math.ceil(total / limit)
+    const hasNext = page < totalPages
+    const hasPrev = page > 1
+    
+    return NextResponse.json({
+      data: news,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev
+      }
+    })
   } catch (error: unknown) {
     console.error('获取新闻失败:', error)
     return NextResponse.json(

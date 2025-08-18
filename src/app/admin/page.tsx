@@ -187,13 +187,22 @@ function AdminPage() {
     const [tools, setTools] = useState<Tool[]>([])
     const [news, setNews] = useState<News[]>([])
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-    const [awards, setAwards] = useState<AwardWinner[]>([])
+    const [awards, setAwards] = useState<AwardWinner[]>([])    
     const [selectedMemberType, setSelectedMemberType] = useState<'pi' | 'researcher' | 'graduate'>('pi')
     const [loading, setLoading] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [modalType, setModalType] = useState<'create' | 'edit'>('create')
     const [editingItem, setEditingItem] = useState<any>(null)
+
+    // 分页状态管理
+    const [pagination, setPagination] = useState({
+        users: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
+        publications: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
+        tools: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
+        news: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
+        awards: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 }
+    })
 
     // Excel导入相关状态
     const graduateFileInputRef = useRef<HTMLInputElement>(null)
@@ -292,12 +301,12 @@ function AdminPage() {
         return response
     }
 
-    // 获取数据
-    const fetchData = async (type: string) => {
+    // 获取数据（支持分页）
+    const fetchData = async (type: string, page?: number, pageSize?: number, search?: string) => {
         setLoading(true)
         try {
             if (type === 'team') {
-                // 获取所有团队成员数据
+                // 获取所有团队成员数据（团队数据不分页）
                 const [piRes, researchersRes, graduatesRes] = await Promise.all([
                     apiRequest('/api/team/pi'),
                     apiRequest('/api/team/researchers'),
@@ -310,14 +319,22 @@ function AdminPage() {
                     graduatesRes.json()
                 ])
 
+                // 处理分页响应格式，提取data字段
+                const extractedPiData = piData?.data && Array.isArray(piData.data) ? piData.data : 
+                    (Array.isArray(piData) ? piData : piData ? [piData] : [])
+                const extractedResearchersData = researchersData?.data && Array.isArray(researchersData.data) ? researchersData.data : 
+                    (Array.isArray(researchersData) ? researchersData : [])
+                const extractedGraduatesData = graduatesData?.data && Array.isArray(graduatesData.data) ? graduatesData.data : 
+                    (Array.isArray(graduatesData) ? graduatesData : [])
+
                 // 合并所有团队成员数据
                 const allMembers: TeamMember[] = [
-                    ...(Array.isArray(piData) ? piData : piData ? [piData] : []).map((pi: any) => ({
+                    ...extractedPiData.map((pi: any) => ({
                         ...pi,
                         type: 'pi' as const
                     })),
-                    ...researchersData.map((researcher: any) => ({...researcher, type: 'researcher' as const})),
-                    ...graduatesData.map((graduate: any) => ({...graduate, type: 'graduate' as const}))
+                    ...extractedResearchersData.map((researcher: any) => ({...researcher, type: 'researcher' as const})),
+                    ...extractedGraduatesData.map((graduate: any) => ({...graduate, type: 'graduate' as const}))
                 ]
 
                 setTeamMembers(allMembers)
@@ -325,6 +342,11 @@ function AdminPage() {
                 return
             }
 
+            // 获取当前分页信息
+            const currentPagination = pagination[type as keyof typeof pagination]
+            const currentPage = page || currentPagination?.currentPage || 1
+            const currentPageSize = pageSize || currentPagination?.pageSize || 10
+            
             let endpoint = ''
             switch (type) {
                 case 'users':
@@ -344,25 +366,60 @@ function AdminPage() {
                     break
             }
 
-            const response = await apiRequest(endpoint)
+            // 构建查询参数
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: currentPageSize.toString()
+            })
+            
+            if (search && search.trim()) {
+                params.append('search', search.trim())
+            }
+
+            const response = await apiRequest(`${endpoint}?${params.toString()}`)
             const data = await response.json()
+
+            // 调试日志：查看API响应数据
+            console.log(`[DEBUG] ${type} API响应:`, {
+                endpoint: `${endpoint}?${params.toString()}`,
+                data,
+                hasPagination: !!data.pagination,
+                paginationData: data.pagination,
+                dataArray: data.data,
+                dataLength: data.data?.length
+            })
+
+            // 更新分页信息
+            if (data.pagination) {
+                console.log(`[DEBUG] 更新${type}分页状态:`, data.pagination)
+                setPagination(prev => ({
+                    ...prev,
+                    [type]: {
+                        currentPage: data.pagination.page || data.pagination.currentPage,
+                        pageSize: data.pagination.limit || data.pagination.pageSize,
+                        total: data.pagination.total,
+                        totalPages: data.pagination.totalPages
+                    }
+                }))
+            } else {
+                console.warn(`[DEBUG] ${type} API响应中缺少pagination字段`)
+            }
 
             switch (type) {
                 case 'users':
-                    setUsers(data)
+                    setUsers(data.data && Array.isArray(data.data) ? data.data : [])
                     break
                 case 'publications':
-                    setPublications(data)
+                    setPublications(data.data && Array.isArray(data.data) ? data.data : [])
                     break
                 case 'tools':
-                    setTools(data)
+                    setTools(data.data && Array.isArray(data.data) ? data.data : [])
                     break
                 case 'news':
-                    // 确保data是数组，如果不是则设置为空数组
-                    setNews(Array.isArray(data) ? data : [])
+                    setNews(data.data && Array.isArray(data.data) ? data.data : [])
                     break
                 case 'awards':
-                    setAwards(Array.isArray(data) ? data : [])
+                    setAwards(data.data && Array.isArray(data.data) ? data.data : [])
                     break
             }
         } catch (error) {
@@ -388,6 +445,19 @@ function AdminPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    // 分页控制函数
+    const handlePageChange = (type: string, page: number) => {
+        fetchData(type, page)
+    }
+
+    const handlePageSizeChange = (type: string, pageSize: number) => {
+        fetchData(type, 1, pageSize) // 改变页面大小时重置到第一页
+    }
+
+    const handleSearch = (type: string) => {
+        fetchData(type, 1, undefined, searchTerm) // 搜索时重置到第一页
     }
 
     // 删除操作
@@ -920,16 +990,43 @@ function AdminPage() {
 
     const renderUserTable = () => (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">用户列表</h3>
-                <button
-                    onClick={handleCreate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4"/>
-                    添加用户
-                </button>
+            <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">用户列表</h3>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4"/>
+                        添加用户
+                    </button>
+                </div>
+                
+                {/* 搜索框 */}
+                <div className="flex items-center space-x-4">
+                    <div className="flex-1 max-w-md">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <input
+                                type="text"
+                                placeholder="搜索用户..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch('users')}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleSearch('users')}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2"
+                    >
+                        <Search className="h-4 w-4" />
+                        搜索
+                    </button>
+                </div>
             </div>
+            
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -979,6 +1076,17 @@ function AdminPage() {
                     </tbody>
                 </table>
             </div>
+            
+            {/* 分页控件 */}
+            <PaginationControls
+                currentPage={pagination.users.currentPage}
+                totalPages={pagination.users.totalPages}
+                pageSize={pagination.users.pageSize}
+                total={pagination.users.total}
+                onPageChange={(page) => handlePageChange('users', page)}
+                onPageSizeChange={(pageSize) => handlePageSizeChange('users', pageSize)}
+                loading={loading}
+            />
         </div>
     )
 
@@ -1205,16 +1313,43 @@ function AdminPage() {
 
     const renderPublicationTable = () => (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">发表成果</h3>
-                <button
-                    onClick={handleCreate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4"/>
-                    添加成果
-                </button>
+            <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">发表成果</h3>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4"/>
+                        添加成果
+                    </button>
+                </div>
+                
+                {/* 搜索框 */}
+                <div className="flex items-center space-x-4">
+                    <div className="flex-1 max-w-md">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <input
+                                type="text"
+                                placeholder="搜索发表成果..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch('publications')}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleSearch('publications')}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2"
+                    >
+                        <Search className="h-4 w-4" />
+                        搜索
+                    </button>
+                </div>
             </div>
+            
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -1254,21 +1389,59 @@ function AdminPage() {
                     </tbody>
                 </table>
             </div>
+            
+            {/* 分页控件 */}
+            <PaginationControls
+                currentPage={pagination.publications.currentPage}
+                totalPages={pagination.publications.totalPages}
+                pageSize={pagination.publications.pageSize}
+                total={pagination.publications.total}
+                onPageChange={(page) => handlePageChange('publications', page)}
+                onPageSizeChange={(pageSize) => handlePageSizeChange('publications', pageSize)}
+                loading={loading}
+            />
         </div>
     )
 
     const renderToolTable = () => (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">开发工具</h3>
-                <button
-                    onClick={handleCreate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4"/>
-                    添加工具
-                </button>
+            <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">开发工具</h3>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4"/>
+                        添加工具
+                    </button>
+                </div>
+                
+                {/* 搜索框 */}
+                <div className="flex items-center space-x-4">
+                    <div className="flex-1 max-w-md">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <input
+                                type="text"
+                                placeholder="搜索开发工具..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch('tools')}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleSearch('tools')}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2"
+                    >
+                        <Search className="h-4 w-4" />
+                        搜索
+                    </button>
+                </div>
             </div>
+            
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -1310,21 +1483,59 @@ function AdminPage() {
                     </tbody>
                 </table>
             </div>
+            
+            {/* 分页控件 */}
+            <PaginationControls
+                currentPage={pagination.tools.currentPage}
+                totalPages={pagination.tools.totalPages}
+                pageSize={pagination.tools.pageSize}
+                total={pagination.tools.total}
+                onPageChange={(page) => handlePageChange('tools', page)}
+                onPageSizeChange={(pageSize) => handlePageSizeChange('tools', pageSize)}
+                loading={loading}
+            />
         </div>
     )
 
     const renderNewsTable = () => (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">新闻动态</h3>
-                <button
-                    onClick={handleCreate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4"/>
-                    添加新闻
-                </button>
+            <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">新闻动态</h3>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4"/>
+                        添加新闻
+                    </button>
+                </div>
+                
+                {/* 搜索框 */}
+                <div className="flex items-center space-x-4">
+                    <div className="flex-1 max-w-md">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <input
+                                type="text"
+                                placeholder="搜索新闻动态..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch('news')}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleSearch('news')}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2"
+                    >
+                        <Search className="h-4 w-4" />
+                        搜索
+                    </button>
+                </div>
             </div>
+            
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -1386,6 +1597,17 @@ function AdminPage() {
                     </tbody>
                 </table>
             </div>
+            
+            {/* 分页控件 */}
+            <PaginationControls
+                currentPage={pagination.news.currentPage}
+                totalPages={pagination.news.totalPages}
+                pageSize={pagination.news.pageSize}
+                total={pagination.news.total}
+                onPageChange={(page) => handlePageChange('news', page)}
+                onPageSizeChange={(pageSize) => handlePageSizeChange('news', pageSize)}
+                loading={loading}
+            />
         </div>
     )
 
@@ -1482,6 +1704,20 @@ function AdminPage() {
                 )}
             </div>
 
+            {/* 搜索框 */}
+            <div className="mb-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                        type="text"
+                        placeholder="搜索获奖记录..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearch('awards', e.target.value)}
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full"
+                    />
+                </div>
+            </div>
+
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -1521,6 +1757,17 @@ function AdminPage() {
                     </tbody>
                 </table>
             </div>
+
+            {/* 分页控件 */}
+            <PaginationControls
+                currentPage={pagination.awards.currentPage}
+                totalPages={pagination.awards.totalPages}
+                pageSize={pagination.awards.pageSize}
+                total={pagination.awards.total}
+                onPageChange={(page) => handlePageChange('awards', page)}
+                onPageSizeChange={(size) => handlePageSizeChange('awards', size)}
+                loading={loading}
+            />
         </div>
     )
 
@@ -1919,6 +2166,161 @@ function UserForm({user, onSubmit, onCancel, isEditing}: {
                 </button>
             </div>
         </form>
+    )
+}
+
+// 通用分页控件组件
+interface PaginationControlsProps {
+    currentPage: number
+    totalPages: number
+    pageSize: number
+    total: number
+    onPageChange: (page: number) => void
+    onPageSizeChange: (pageSize: number) => void
+    loading?: boolean
+}
+
+const PaginationControls: React.FC<PaginationControlsProps> = ({
+    currentPage,
+    totalPages,
+    pageSize,
+    total,
+    onPageChange,
+    onPageSizeChange,
+    loading = false
+}) => {
+    // 调试日志：查看PaginationControls接收到的props
+    console.log('[DEBUG] PaginationControls props:', {
+        currentPage,
+        totalPages,
+        pageSize,
+        total,
+        loading,
+        totalType: typeof total,
+        isNaN: isNaN(total),
+        totalOrZero: total || 0
+    })
+    
+    const pageSizeOptions = [10, 20, 50, 100]
+    
+    // 生成页码按钮
+    const generatePageNumbers = () => {
+        const pages = []
+        const maxVisiblePages = 5
+        
+        if (totalPages <= maxVisiblePages) {
+            // 如果总页数小于等于最大显示页数，显示所有页码
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i)
+            }
+        } else {
+            // 否则显示部分页码
+            const halfVisible = Math.floor(maxVisiblePages / 2)
+            let startPage = Math.max(1, currentPage - halfVisible)
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+            
+            // 调整起始页
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1)
+            }
+            
+            // 添加第一页和省略号
+            if (startPage > 1) {
+                pages.push(1)
+                if (startPage > 2) {
+                    pages.push('...')
+                }
+            }
+            
+            // 添加中间页码
+            for (let i = startPage; i <= endPage; i++) {
+                pages.push(i)
+            }
+            
+            // 添加省略号和最后一页
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    pages.push('...')
+                }
+                pages.push(totalPages)
+            }
+        }
+        
+        return pages
+    }
+    
+    const pageNumbers = generatePageNumbers()
+    
+    return (
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">
+                        显示 {Math.min((currentPage - 1) * pageSize + 1, total || 0)} 到{' '}
+                        {Math.min(currentPage * pageSize, total || 0)} 条，共 {total || 0} 条记录
+                    </span>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                        disabled={loading}
+                        className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                    >
+                        {pageSizeOptions.map(size => (
+                            <option key={size} value={size}>
+                                {size} 条/页
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                
+                <div className="flex items-center space-x-1">
+                    {/* 上一页按钮 */}
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage <= 1 || loading}
+                        className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        上一页
+                    </button>
+                    
+                    {/* 页码按钮 */}
+                    {pageNumbers.map((page, index) => {
+                        if (page === '...') {
+                            return (
+                                <span key={`ellipsis-${index}`} className="px-3 py-1 text-sm text-gray-500">
+                                    ...
+                                </span>
+                            )
+                        }
+                        
+                        const pageNum = page as number
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => onPageChange(pageNum)}
+                                disabled={loading}
+                                className={`px-3 py-1 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    pageNum === currentPage
+                                        ? 'text-white bg-blue-600 border border-blue-600'
+                                        : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                {pageNum}
+                            </button>
+                        )
+                    })}
+                    
+                    {/* 下一页按钮 */}
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages || loading}
+                        className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        下一页
+                    </button>
+                </div>
+            </div>
+        </div>
     )
 }
 
