@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       data: {
         serialNumber,
         awardee,
-        awardDate: awardDate ? new Date(awardDate) : null,
+        awardDate: awardDate || null,
         awardName,
         advisor,
         remarks,

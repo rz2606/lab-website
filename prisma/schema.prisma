@@ -65,6 +65,7 @@ model Graduate {
   discipline     String?  // 学科
   thesisTitle    String?  @db.Text // 论文题目
   remarks        String?  @db.Text // 备注
+  hasPaper       Boolean? // 是否有论文
   position       String?  // 职位 (保留原有字段)
   email          String?  // 邮箱 (保留原有字段)
   company        String?  // 单位 (保留原有字段)

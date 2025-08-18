@@ -125,13 +125,6 @@ const AwardsPage = () => {
                 <p className="text-gray-600 mt-1">实验室成员获奖记录展示</p>
               </div>
             </div>
-            <Button
-              onClick={() => setShowImportForm(!showImportForm)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              导入Excel
-            </Button>
           </div>
         </div>
       </div>

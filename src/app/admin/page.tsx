@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, FileText, Wrench, Newspaper, UserCheck, Plus, Edit, Trash2, Search, Lock, AlertTriangle, Upload, Award } from 'lucide-react'
+import { Users, FileText, Wrench, Newspaper, UserCheck, Plus, Edit, Trash2, Search, Lock, AlertTriangle, Upload, Award, X, Eye } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import TagSelector from '@/components/TagSelector'
 import { getCurrentUser, isAdmin, isAuthenticated, clearAuth, getToken } from '@/lib/auth'
 import dynamic from 'next/dynamic'
+import * as XLSX from 'xlsx'
 
 // 错误边界组件
 class ErrorBoundary extends Component<
@@ -127,20 +128,35 @@ interface TeamMember {
   position?: string
   company?: string
   graduationYear?: number
+  hasPaper?: boolean
 }
 
 // 获奖名单接口
 interface AwardWinner {
   id: number
-  name: string
-  awardName: string
-  awardLevel: string
-  awardYear: number
-  awardCategory: string
-  organization: string
-  description?: string
+  serialNumber?: string
+  awardee: string // 获奖人员
+  awardDate?: string // 获奖时间
+  awardName?: string // 获奖名称及等级
+  advisor?: string // 指导老师
+  remarks?: string // 备注
   createdAt?: string
   updatedAt?: string
+  createdBy?: number
+  updatedBy?: number
+}
+
+// 工作表信息接口
+interface WorksheetInfo {
+  name: string
+  data: any[][]
+  previewData: any[][]
+}
+
+// Excel文件解析结果接口
+interface ExcelParseResult {
+  worksheets: WorksheetInfo[]
+  fileName: string
 }
 
 function AdminPage() {
@@ -175,6 +191,12 @@ function AdminPage() {
   // 获奖名单表单状态
   const [showAwardForm, setShowAwardForm] = useState(false)
   const [editingAward, setEditingAward] = useState<AwardWinner | null>(null)
+  
+  // 工作表选择相关状态
+  const [showWorksheetModal, setShowWorksheetModal] = useState(false)
+  const [excelParseResult, setExcelParseResult] = useState<ExcelParseResult | null>(null)
+  const [selectedWorksheet, setSelectedWorksheet] = useState<string>('')
+  const [importType, setImportType] = useState<'graduate' | 'award'>('graduate')
   
   // 确保refs正确初始化和调试信息
   useEffect(() => {
@@ -586,6 +608,42 @@ function AdminPage() {
     }
   }
 
+  // 解析Excel文件并提取工作表信息
+  const parseExcelFile = async (file: File): Promise<ExcelParseResult> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          
+          const worksheets: WorksheetInfo[] = workbook.SheetNames.map(sheetName => {
+            const worksheet = workbook.Sheets[sheetName]
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+            
+            // 获取所有数据作为预览数据
+            const previewData = jsonData
+            
+            return {
+              name: sheetName,
+              data: jsonData,
+              previewData
+            }
+          })
+          
+          resolve({
+            worksheets,
+            fileName: file.name
+          })
+        } catch (error) {
+          reject(error)
+        }
+      }
+      reader.onerror = () => reject(new Error('文件读取失败'))
+      reader.readAsArrayBuffer(file)
+    })
+  }
+
   // 处理毕业生Excel文件上传
   const handleGraduateFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -600,6 +658,80 @@ function AdminPage() {
     setImportLoading(true)
     setImportResult(null)
 
+    try {
+      // 解析Excel文件
+      const parseResult = await parseExcelFile(file)
+      
+      // 如果只有一个工作表，直接导入
+      if (parseResult.worksheets.length === 1) {
+        await importGraduateData(parseResult.worksheets[0].data, file)
+      } else {
+        // 多个工作表，显示选择模态框
+        setExcelParseResult(parseResult)
+        setImportType('graduate')
+        setSelectedWorksheet('')
+        setShowWorksheetModal(true)
+      }
+    } catch (error) {
+      console.error('文件解析失败:', error)
+      setImportResult({
+        success: false,
+        message: '文件解析失败，请检查文件格式'
+      })
+    } finally {
+      setImportLoading(false)
+      // 清空文件输入
+      if (graduateFileInputRef.current) {
+        graduateFileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // 处理获奖名单Excel文件上传
+  const handleAwardFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      alert('请选择Excel文件（.xlsx或.xls格式）')
+      return
+    }
+
+    setImportLoading(true)
+    setImportResult(null)
+
+    try {
+      // 解析Excel文件
+      const parseResult = await parseExcelFile(file)
+      
+      // 如果只有一个工作表，直接导入
+      if (parseResult.worksheets.length === 1) {
+        await importAwardData(parseResult.worksheets[0].data, file)
+      } else {
+        // 多个工作表，显示选择模态框
+        setExcelParseResult(parseResult)
+        setImportType('award')
+        setSelectedWorksheet('')
+        setShowWorksheetModal(true)
+      }
+    } catch (error) {
+      console.error('文件解析失败:', error)
+      setImportResult({
+        success: false,
+        message: '文件解析失败，请检查文件格式'
+      })
+    } finally {
+      setImportLoading(false)
+      // 清空文件输入
+      if (awardFileInputRef.current) {
+        awardFileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // 导入毕业生数据
+  const importGraduateData = async (data: any[][], file: File) => {
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -635,29 +767,11 @@ function AdminPage() {
         success: false,
         message: '导入失败，请检查文件格式和网络连接'
       })
-    } finally {
-      setImportLoading(false)
-      // 清空文件输入
-      if (graduateFileInputRef.current) {
-        graduateFileInputRef.current.value = ''
-      }
     }
   }
 
-  // 处理获奖名单Excel文件上传
-  const handleAwardFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // 验证文件类型
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      alert('请选择Excel文件（.xlsx或.xls格式）')
-      return
-    }
-
-    setImportLoading(true)
-    setImportResult(null)
-
+  // 导入获奖数据
+  const importAwardData = async (data: any[][], file: File) => {
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -693,12 +807,52 @@ function AdminPage() {
         success: false,
         message: '导入失败，请检查文件格式和网络连接'
       })
+    }
+  }
+
+  // 处理工作表选择确认
+  const handleWorksheetConfirm = async (worksheetName?: string) => {
+    const targetWorksheet = worksheetName || selectedWorksheet
+    if (!targetWorksheet || !excelParseResult) {
+      alert('请选择一个工作表')
+      return
+    }
+
+    const selectedSheet = excelParseResult.worksheets.find(ws => ws.name === targetWorksheet)
+    if (!selectedSheet) {
+      alert('选择的工作表不存在')
+      return
+    }
+
+    setShowWorksheetModal(false)
+    setImportLoading(true)
+
+    try {
+      // 创建一个临时文件用于导入
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.aoa_to_sheet(selectedSheet.data)
+      XLSX.utils.book_append_sheet(workbook, worksheet, selectedSheet.name)
+      
+      // 生成Excel文件
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const file = new File([blob], excelParseResult.fileName, { type: blob.type })
+
+      if (importType === 'graduate') {
+        await importGraduateData(selectedSheet.data, file)
+      } else {
+        await importAwardData(selectedSheet.data, file)
+      }
+    } catch (error) {
+      console.error('导入失败:', error)
+      setImportResult({
+        success: false,
+        message: '导入失败，请重试'
+      })
     } finally {
       setImportLoading(false)
-      // 清空文件输入
-      if (awardFileInputRef.current) {
-        awardFileInputRef.current.value = ''
-      }
+      setExcelParseResult(null)
+      setSelectedWorksheet('')
     }
   }
 
@@ -940,6 +1094,7 @@ function AdminPage() {
                 <>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">职位</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">公司</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">是否有论文</th>
                 </>
               )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -967,6 +1122,15 @@ function AdminPage() {
                   <>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.position}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.company}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        member.hasPaper === true ? 'bg-green-100 text-green-800' : 
+                        member.hasPaper === false ? 'bg-red-100 text-red-800' : 
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {member.hasPaper === true ? '是' : member.hasPaper === false ? '否' : '未知'}
+                      </span>
+                    </td>
                   </>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1275,31 +1439,22 @@ function AdminPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖项名称</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">获奖年份</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖项级别</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">颁奖机构</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">获奖人员</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">获奖名称及等级</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">获奖时间</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">指导老师</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {awards.map((award) => (
               <tr key={award.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{award.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{award.awardee}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.awardName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.awardYear}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    award.awardLevel === '国家级' ? 'bg-red-100 text-red-800' :
-                    award.awardLevel === '省级' ? 'bg-yellow-100 text-yellow-800' :
-                    award.awardLevel === '市级' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {award.awardLevel}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.organization}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.awardDate}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.advisor}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{award.remarks}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button 
                     onClick={() => handleEditAward(award)}
@@ -1460,7 +1615,98 @@ function AdminPage() {
         </div>
 
         {/* 模态框等其他组件 */}
-        {/* ... */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {modalType === 'create' ? '创建' : '编辑'}
+                  {activeTab === 'users' && '用户'}
+                  {activeTab === 'team' && '团队成员'}
+                  {activeTab === 'publications' && '论文'}
+                  {activeTab === 'tools' && '开发工具'}
+                  {activeTab === 'news' && '新闻'}
+                  {activeTab === 'awards' && '获奖者'}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {activeTab === 'users' && (
+                <UserForm
+                  user={editingItem}
+                  onSubmit={handleUserSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                />
+              )}
+              
+              {activeTab === 'team' && (
+                <TeamMemberForm
+                  member={editingItem}
+                  onSubmit={handleTeamMemberSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                  defaultType={selectedMemberType}
+                />
+              )}
+              
+              {activeTab === 'publications' && (
+                <PublicationForm
+                  publication={editingItem}
+                  onSubmit={handlePublicationSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                />
+              )}
+              
+              {activeTab === 'tools' && (
+                <ToolForm
+                  tool={editingItem}
+                  onSubmit={handleToolSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                />
+              )}
+              
+              {activeTab === 'news' && (
+                <NewsForm
+                  news={editingItem}
+                  onSubmit={handleNewsSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                />
+              )}
+              
+              {activeTab === 'awards' && (
+                <AwardForm
+                  award={editingItem}
+                  onSubmit={handleAwardSubmit}
+                  onCancel={() => setShowModal(false)}
+                  isEditing={modalType === 'edit'}
+                />
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* 工作表选择模态框 */}
+        <WorksheetSelectionModal
+          isOpen={showWorksheetModal}
+          onClose={() => {
+            setShowWorksheetModal(false)
+            setExcelParseResult(null)
+            setSelectedWorksheet('')
+          }}
+          parseResult={excelParseResult}
+          onConfirm={handleWorksheetConfirm}
+        />
       </div>
     </ErrorBoundary>
   )
@@ -1628,6 +1874,150 @@ function UserForm({ user, onSubmit, onCancel, isEditing }: {
   )
 }
 
+// 工作表选择模态框组件
+function WorksheetSelectionModal({ 
+  isOpen, 
+  onClose, 
+  parseResult, 
+  onConfirm 
+}: {
+  isOpen: boolean
+  onClose: () => void
+  parseResult: ExcelParseResult | null
+  onConfirm: (worksheetName: string) => void
+}) {
+  const [selectedWorksheet, setSelectedWorksheet] = useState<string>('')
+  const [previewData, setPreviewData] = useState<any[]>([])
+
+  useEffect(() => {
+    if (parseResult && parseResult.worksheets && parseResult.worksheets.length > 0) {
+      const firstWorksheet = parseResult.worksheets[0].name
+      setSelectedWorksheet(firstWorksheet)
+      // 修复字段名：使用previewData而不是preview
+      const previewRows = parseResult.worksheets[0].previewData || []
+      // 将二维数组转换为对象数组格式
+      const formattedPreview = previewRows.map((row, index) => {
+        const obj: any = {}
+        row.forEach((cell, cellIndex) => {
+          obj[`col_${cellIndex}`] = cell
+        })
+        return obj
+      })
+      setPreviewData(formattedPreview)
+    } else {
+      setSelectedWorksheet('')
+      setPreviewData([])
+    }
+  }, [parseResult])
+
+  const handleWorksheetChange = (worksheetName: string) => {
+    setSelectedWorksheet(worksheetName)
+    const worksheet = parseResult?.worksheets?.find(w => w.name === worksheetName)
+    if (worksheet) {
+      // 修复字段名：使用previewData而不是preview
+      const previewRows = worksheet.previewData || []
+      // 将二维数组转换为对象数组格式
+      const formattedPreview = previewRows.map((row, index) => {
+        const obj: any = {}
+        row.forEach((cell, cellIndex) => {
+          obj[`col_${cellIndex}`] = cell
+        })
+        return obj
+      })
+      setPreviewData(formattedPreview)
+    } else {
+      setPreviewData([])
+    }
+  }
+
+  const handleConfirm = () => {
+    if (selectedWorksheet) {
+      onConfirm(selectedWorksheet)
+    } else {
+      alert('请选择一个工作表')
+    }
+  }
+
+  if (!isOpen || !parseResult) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            选择工作表
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            选择要导入的工作表：
+          </label>
+          <select
+            value={selectedWorksheet}
+            onChange={(e) => handleWorksheetChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          >
+            {parseResult?.worksheets?.map((worksheet) => (
+              <option key={worksheet.name} value={worksheet.name}>
+                {worksheet.name} ({worksheet.data.length} 行数据)
+              </option>
+            )) || []}
+          </select>
+        </div>
+
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            数据预览（所有数据）：
+          </h4>
+          <div className="border border-gray-300 rounded-md max-h-96 overflow-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
+                {(previewData || []).map((row, index) => (
+                  <tr key={index} className={index === 0 ? 'bg-gray-50' : ''}>
+                    {Object.values(row || {}).map((cell: any, cellIndex) => (
+                      <td key={cellIndex} className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200 last:border-r-0 whitespace-pre-wrap break-words max-w-xs">
+                        {cell || '-'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {previewData.length === 0 && (
+            <p className="text-gray-500 text-sm mt-2">该工作表没有数据</p>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!selectedWorksheet || previewData.length === 0}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            确认导入
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 
 // 获奖记录表单组件
@@ -1638,18 +2028,18 @@ function AwardForm({ award, onSubmit, onCancel, isEditing }: {
   isEditing: boolean
 }) {
   const [formData, setFormData] = useState({
-    name: award?.name || '',
+    awardee: award?.awardee || '',
     awardName: award?.awardName || '',
-    year: award?.year || new Date().getFullYear(),
-    level: award?.level || '',
-    organization: award?.organization || ''
+    awardDate: award?.awardDate || '',
+    advisor: award?.advisor || '',
+    remarks: award?.remarks || ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     // 基本验证
-    if (!formData.name.trim()) {
+    if (!formData.awardee.trim()) {
       alert('获奖者姓名不能为空')
       return
     }
@@ -1659,18 +2049,8 @@ function AwardForm({ award, onSubmit, onCancel, isEditing }: {
       return
     }
     
-    if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 10) {
-      alert('请输入有效的年份')
-      return
-    }
-    
-    if (!formData.level.trim()) {
-      alert('奖项级别不能为空')
-      return
-    }
-    
-    if (!formData.organization.trim()) {
-      alert('颁奖机构不能为空')
+    if (!formData.awardDate.trim()) {
+      alert('获奖时间不能为空')
       return
     }
     
@@ -1686,8 +2066,8 @@ function AwardForm({ award, onSubmit, onCancel, isEditing }: {
         </label>
         <input
           type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          value={formData.awardee}
+          onChange={(e) => setFormData({...formData, awardee: e.target.value})}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           required
           placeholder="请输入获奖者姓名"
@@ -1710,51 +2090,41 @@ function AwardForm({ award, onSubmit, onCancel, isEditing }: {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          获奖年份 *
+          获奖时间 *
         </label>
         <input
-          type="number"
-          value={formData.year}
-          onChange={(e) => setFormData({...formData, year: parseInt(e.target.value) || new Date().getFullYear()})}
+          type="date"
+          value={formData.awardDate}
+          onChange={(e) => setFormData({...formData, awardDate: e.target.value})}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           required
-          min="1900"
-          max={new Date().getFullYear() + 10}
-          placeholder="请输入获奖年份"
+          placeholder="请选择获奖时间"
         />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          奖项级别 *
+          指导老师
         </label>
-        <select
-          value={formData.level}
-          onChange={(e) => setFormData({...formData, level: e.target.value})}
+        <input
+          type="text"
+          value={formData.advisor}
+          onChange={(e) => setFormData({...formData, advisor: e.target.value})}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          required
-        >
-          <option value="">请选择奖项级别</option>
-          <option value="国际级">国际级</option>
-          <option value="国家级">国家级</option>
-          <option value="省部级">省部级</option>
-          <option value="市级">市级</option>
-          <option value="校级">校级</option>
-          <option value="其他">其他</option>
-        </select>
+          placeholder="请输入指导老师姓名"
+        />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          颁奖机构 *
+          备注
         </label>
-        <input
-          type="text"
-          value={formData.organization}
-          onChange={(e) => setFormData({...formData, organization: e.target.value})}
+        <textarea
+          value={formData.remarks}
+          onChange={(e) => setFormData({...formData, remarks: e.target.value})}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          required
-          placeholder="请输入颁奖机构"
+          rows={3}
+          placeholder="请输入备注信息"
         />
       </div>
 

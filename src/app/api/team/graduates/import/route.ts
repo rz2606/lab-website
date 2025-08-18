@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证Excel表头
-    const requiredHeaders = ['序号', '姓名', '入学时间', '毕业时间', '指导老师', '学位', '学科', '论文题目', '备注']
+    const requiredHeaders = ['序号', '姓名', '入学时间', '毕业时间', '指导老师', '学位', '学科', '论文题目', '是否有论文']
     const firstRow = jsonData[0] as any
     const headers = Object.keys(firstRow)
     
@@ -98,6 +98,23 @@ export async function POST(request: NextRequest) {
           return null
         }
 
+        // 解析是否有论文字段
+        const parseHasPaper = (value: any) => {
+          if (value === null || value === undefined || value === '') return null
+          
+          const strValue = String(value).trim().toLowerCase()
+          
+          // 支持多种输入格式
+          if (['是', '有', 'true', '1', 'yes', 'y'].includes(strValue)) {
+            return true
+          }
+          if (['否', '无', 'false', '0', 'no', 'n'].includes(strValue)) {
+            return false
+          }
+          
+          return null
+        }
+
         const graduateData = {
           serialNumber: row['序号'] ? String(row['序号']) : null,
           name: row['姓名'],
@@ -108,6 +125,7 @@ export async function POST(request: NextRequest) {
           discipline: row['学科'] || null,
           thesisTitle: row['论文题目'] || null,
           remarks: row['备注'] || null,
+          hasPaper: parseHasPaper(row['是否有论文']),
           createdBy: currentUserId,
           updatedBy: currentUserId
         }

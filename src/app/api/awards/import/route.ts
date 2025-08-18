@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证Excel表头
-    const requiredHeaders = ['序号', '获奖人员', '获奖时间', '获奖名称及等级', '指导老师', '备注']
+    const requiredHeaders = ['序号', '获奖人员', '获奖时间', '获奖名称及等级', '指导老师']
     const firstRow = jsonData[0] as any
     const headers = Object.keys(firstRow)
     
@@ -91,13 +91,13 @@ export async function POST(request: NextRequest) {
           // 如果是Excel日期序列号
           if (typeof dateValue === 'number') {
             const excelDate = new Date((dateValue - 25569) * 86400 * 1000)
-            return excelDate
+            return excelDate.toISOString().split('T')[0] // 返回YYYY-MM-DD格式的字符串
           }
           
           // 如果是字符串，尝试解析
           if (typeof dateValue === 'string') {
             const date = new Date(dateValue)
-            return isNaN(date.getTime()) ? null : date
+            return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0]
           }
           
           return null
