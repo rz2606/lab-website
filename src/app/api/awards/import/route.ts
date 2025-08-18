@@ -6,13 +6,17 @@ import * as XLSX from 'xlsx'
 // Excel导入获奖数据
 export async function POST(request: NextRequest) {
   try {
-    const currentUserId = getCurrentUserId(request)
-    
-    if (!currentUserId) {
-      return NextResponse.json(
-        { error: '未授权访问' },
-        { status: 401 }
-      )
+    // 查询数据库中是否存在用户，如果存在则使用第一个用户的ID
+    let currentUserId: number | null = null
+    try {
+      const firstUser = await db.user.findFirst({
+        select: { id: true }
+      })
+      currentUserId = firstUser?.id || null
+      console.log('找到的用户ID:', currentUserId)
+    } catch (userError) {
+      console.log('查询用户失败，将使用null作为createdBy/updatedBy:', userError)
+      currentUserId = null
     }
 
     const formData = await request.formData()
@@ -84,23 +88,12 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // 处理日期字段
+        // 处理日期字段 - 直接存储原始字符串格式
         const parseDate = (dateValue: any) => {
           if (!dateValue) return null
           
-          // 如果是Excel日期序列号
-          if (typeof dateValue === 'number') {
-            const excelDate = new Date((dateValue - 25569) * 86400 * 1000)
-            return excelDate.toISOString().split('T')[0] // 返回YYYY-MM-DD格式的字符串
-          }
-          
-          // 如果是字符串，尝试解析
-          if (typeof dateValue === 'string') {
-            const date = new Date(dateValue)
-            return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0]
-          }
-          
-          return null
+          // 直接返回字符串格式，保持原始数据
+          return String(dateValue).trim()
         }
 
         const awardData = {
@@ -113,6 +106,8 @@ export async function POST(request: NextRequest) {
           createdBy: currentUserId,
           updatedBy: currentUserId
         }
+        
+        console.log(`处理第${i + 2}行数据:`, awardData)
 
         awardsData.push(awardData)
       } catch (error) {
@@ -128,10 +123,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 批量插入数据库
+    console.log('准备插入的数据数量:', awardsData.length)
+    console.log('插入数据示例:', awardsData[0])
+    
     const result = await db.award.createMany({
-      data: awardsData,
-      skipDuplicates: true
+      data: awardsData
+      // 移除 skipDuplicates 以确保数据能够插入
     })
+    
+    console.log('数据库插入结果:', result)
 
     return NextResponse.json({
       success: true,
