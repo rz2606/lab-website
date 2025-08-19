@@ -214,8 +214,7 @@ function AdminPage() {
     const [forceRefresh, setForceRefresh] = useState(0)
 
     // 获奖名单表单状态
-    const [showAwardForm, setShowAwardForm] = useState(false)
-    const [editingAward, setEditingAward] = useState<AwardWinner | null>(null)
+
 
     // 工作表选择相关状态
     const [showWorksheetModal, setShowWorksheetModal] = useState(false)
@@ -644,8 +643,8 @@ function AdminPage() {
     // 处理获奖名单表单提交
     const handleAwardSubmit = async (awardData: any) => {
         try {
-            const url = editingAward ? `/api/awards/${editingAward.id}` : '/api/awards'
-            const method = editingAward ? 'PUT' : 'POST'
+            const url = modalType === 'edit' && editingItem ? `/api/awards/${editingItem.id}` : '/api/awards'
+            const method = modalType === 'edit' ? 'PUT' : 'POST'
 
             const response = await apiRequest(url, {
                 method,
@@ -653,10 +652,10 @@ function AdminPage() {
             })
 
             if (response.ok) {
-                setShowAwardForm(false)
-                setEditingAward(null)
+                setShowModal(false)
+                setEditingItem(null)
                 fetchData('awards')
-                alert(editingAward ? '获奖记录更新成功' : '获奖记录创建成功')
+                alert(modalType === 'edit' ? '获奖记录更新成功' : '获奖记录创建成功')
             } else {
                 alert('操作失败')
             }
@@ -668,13 +667,17 @@ function AdminPage() {
 
     // 获奖名单CRUD操作
     const handleCreateAward = () => {
-        setEditingAward(null)
-        setShowAwardForm(true)
+        setEditingItem(null)
+        setModalType('create')
+        setActiveTab('awards')
+        setShowModal(true)
     }
 
     const handleEditAward = (award: AwardWinner) => {
-        setEditingAward(award)
-        setShowAwardForm(true)
+        setEditingItem(award)
+        setModalType('edit')
+        setActiveTab('awards')
+        setShowModal(true)
     }
 
     const handleDeleteAward = async (id: number) => {
