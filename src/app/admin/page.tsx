@@ -213,6 +213,9 @@ function AdminPage() {
     // 强制刷新状态
     const [forceRefresh, setForceRefresh] = useState(0)
 
+    // 最新文章展示状态
+    const [showFullList, setShowFullList] = useState(false)
+
     // 获奖名单表单状态
 
 
@@ -950,16 +953,22 @@ function AdminPage() {
 
     useEffect(() => {
         fetchData(activeTab)
+        // 当切换到成果管理标签页时，也需要加载获奖数据
+        if (activeTab === 'achievements') {
+            fetchData('awards')
+        }
     }, [activeTab])
 
     const tabs = [
         {id: 'users', name: '用户管理', icon: Users},
         {id: 'team', name: '团队管理', icon: UserCheck},
-        {id: 'publications', name: '发表成果', icon: FileText},
+        {id: 'achievements', name: '成果管理', icon: Award},
         {id: 'tools', name: '开发工具', icon: Wrench},
-        {id: 'news', name: '新闻动态', icon: Newspaper},
-        {id: 'awards', name: '获奖名单', icon: Award}
+        {id: 'news', name: '新闻动态', icon: Newspaper}
     ]
+
+    // 成果管理子模块状态
+    const [achievementSubTab, setAchievementSubTab] = useState('latest-articles')
 
     // 过滤团队成员
     const filteredTeamMembers = teamMembers.filter(member => member.type === selectedMemberType)
@@ -978,14 +987,12 @@ function AdminPage() {
                 return renderUserTable()
             case 'team':
                 return renderTeamTable()
-            case 'publications':
-                return renderPublicationTable()
+            case 'achievements':
+                return renderAchievementsTab()
             case 'tools':
                 return renderToolTable()
             case 'news':
                 return renderNewsTable()
-            case 'awards':
-                return renderAwardTable()
             default:
                 return <div>选择一个管理模块</div>
         }
@@ -1615,26 +1622,202 @@ function AdminPage() {
     )
 
     // 渲染获奖名单表格
+    // 成果管理主界面
+    const renderAchievementsTab = () => {
+        const achievementSubTabs = [
+            { id: 'latest-articles', name: '最新文章', icon: FileText },
+            { id: 'featured-articles', name: '重点文章', icon: Award },
+            { id: 'publications', name: '发表成果管理', icon: FileText },
+            { id: 'awards', name: '获奖名单管理', icon: Award }
+        ]
+
+        return (
+            <div className="space-y-6">
+                {/* 子模块导航 */}
+                <div className="bg-white rounded-lg shadow">
+                    <div className="border-b border-gray-200">
+                        <nav className="-mb-px flex space-x-8 px-6" aria-label="成果管理子模块">
+                            {achievementSubTabs.map((subTab) => {
+                                const Icon = subTab.icon
+                                return (
+                                    <button
+                                        key={subTab.id}
+                                        onClick={() => setAchievementSubTab(subTab.id)}
+                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                                            achievementSubTab === subTab.id
+                                                ? 'border-blue-500 text-blue-600'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <Icon className="h-4 w-4" />
+                                        {subTab.name}
+                                    </button>
+                                )
+                            })}
+                        </nav>
+                    </div>
+                </div>
+
+                {/* 子模块内容 */}
+                <div>
+                    {achievementSubTab === 'latest-articles' && renderLatestArticles()}
+                    {achievementSubTab === 'featured-articles' && renderFeaturedArticles()}
+                    {achievementSubTab === 'publications' && renderPublicationTable()}
+                    {achievementSubTab === 'awards' && renderAwardTable()}
+                </div>
+            </div>
+        )
+    }
+
+    // 最新文章展示
+    const renderLatestArticles = () => {
+        const displayedNews = showFullList ? news : news.slice(0, 20)
+
+        return (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900">最新文章</h3>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">共 {news.length} 篇文章</span>
+                            {!showFullList && news.length > 20 && (
+                                <button
+                                    onClick={() => setShowFullList(true)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                >
+                                    查看完整列表
+                                </button>
+                            )}
+                            {showFullList && (
+                                <button
+                                    onClick={() => setShowFullList(false)}
+                                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                                >
+                                    收起列表
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">标题</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">摘要</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发布时间</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {displayedNews.map((item) => (
+                                <tr key={item.id}>
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">{item.title}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500 max-w-md truncate">{item.summary}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {new Date(item.publishDate).toLocaleDateString('zh-CN')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                            item.featured ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                                        }`}>
+                                            {item.featured ? '重点文章' : '普通文章'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
+    // 重点文章展示
+    const renderFeaturedArticles = () => {
+        const featuredNews = news.filter(item => item.featured)
+
+        return (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900">重点文章</h3>
+                        <span className="text-sm text-gray-500">共 {featuredNews.length} 篇重点文章</span>
+                    </div>
+                </div>
+                
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">标题</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">摘要</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发布时间</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {featuredNews.map((item) => (
+                                <tr key={item.id}>
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">{item.title}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500 max-w-md truncate">{item.summary}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {new Date(item.publishDate).toLocaleDateString('zh-CN')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button
+                                            onClick={() => {
+                                                setEditingItem(item)
+                                                setModalType('edit')
+                                                setActiveTab('news')
+                                                setShowModal(true)
+                                            }}
+                                            className="text-blue-600 hover:text-blue-900 mr-3"
+                                        >
+                                            <Edit className="h-4 w-4"/>
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm('确定要取消重点标记吗？')) {
+                                                    try {
+                                                        const response = await apiRequest(`/api/news/${item.id}`, {
+                                                            method: 'PUT',
+                                                            body: JSON.stringify({ ...item, featured: false })
+                                                        })
+                                                        if (response.ok) {
+                                                            await fetchData()
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('取消重点标记失败:', error)
+                                                    }
+                                                }
+                                            }}
+                                            className="text-orange-600 hover:text-orange-900"
+                                        >
+                                            <Award className="h-4 w-4"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {featuredNews.length === 0 && (
+                    <div className="px-6 py-8 text-center text-gray-500">
+                        <Award className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>暂无重点文章</p>
+                        <p className="text-sm mt-2">在新闻管理中将文章标记为重点文章后，会在此处显示</p>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
     const renderAwardTable = () => (
         <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-                {/* 调试信息和强制刷新 */}
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <div className="flex justify-between items-center">
-                        <div className="text-sm text-yellow-800">
-                            <span>调试信息: awardFileInputRef状态 - {awardFileInputRef.current ? '已初始化' : '未初始化'}</span>
-                        </div>
-                        <button
-                            onClick={() => {
-                                setForceRefresh(prev => prev + 1)
-                                window.location.reload()
-                            }}
-                            className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
-                        >
-                            强制刷新页面
-                        </button>
-                    </div>
-                </div>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium text-gray-900">获奖名单管理</h3>
                     <div className="flex gap-2">
