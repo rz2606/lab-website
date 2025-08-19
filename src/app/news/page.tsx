@@ -46,7 +46,9 @@ const NewsPage = () => {
           data: data
         })
         // 确保data是数组，如果不是则设置为空数组
-        setNews(Array.isArray(data) ? data : [])
+
+        console.log('data',data)
+        setNews(data?.data)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : '获取新闻数据失败'
         setError(errorMessage)
@@ -166,7 +168,7 @@ const NewsPage = () => {
   
   // 合并数组：置顶新闻在前，普通新闻在后
   const sortedNews = [...pinnedNews, ...regularNews]
-
+  console.log('sortedNews',sortedNews)
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -184,7 +186,7 @@ const NewsPage = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="md:flex">
                 <div className="md:w-1/2">
-                  <div className="h-64 md:h-full bg-gray-200 flex items-center justify-center">
+                  <div className="h-64 md:h-full bg-gray-200 flex items-center justify-center relative">
                     {sortedNews[0].image ? (
                       <Image 
                         src={sortedNews[0].image} 
@@ -192,9 +194,10 @@ const NewsPage = () => {
                         width={400}
                         height={250}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                     ) : (
-                      <span className="text-gray-500">特色新闻图片</span>
+                      <div className="text-gray-500">暂无图片</div>
                     )}
                   </div>
                 </div>
@@ -237,6 +240,7 @@ const NewsPage = () => {
             }`}>
               {/* News Image */}
               <div className="h-48 bg-gray-200 flex items-center justify-center relative">
+
                 {item.isPinned && (
                   <div className="absolute top-2 right-2 bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded flex items-center gap-1">
                     <Pin size={12} />
@@ -250,6 +254,7 @@ const NewsPage = () => {
                     width={400}
                     height={200}
                     className="w-full h-full object-cover"
+                    unoptimized
                   />
                 ) : (
                   <span className="text-gray-500">新闻图片</span>

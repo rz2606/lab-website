@@ -158,6 +158,7 @@ const FileUpload = ({
                 width={200}
                 height={200}
                 className="rounded-lg object-cover border"
+                unoptimized
               />
               <button
                 onClick={handleRemove}

@@ -7,7 +7,8 @@ export async function GET(
 ) {
   try {
     // 解析参数：width/height 或 width
-    const [width, height] = params.params
+    const resolvedParams = await params
+    const [width, height] = resolvedParams.params
     const w = parseInt(width) || 400
     const h = parseInt(height) || w
     
