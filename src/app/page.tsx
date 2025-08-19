@@ -2,6 +2,7 @@
 import { ArrowRight, Beaker, Users, BookOpen, Code, Sparkles, Zap, Target } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import NewsSection from '@/components/NewsSection'
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false)
@@ -158,6 +159,38 @@ export default function Home() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* News Section */}
+      <section className="py-24 bg-gradient-to-b from-white to-slate-50 relative">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`text-center mb-16 transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-100 to-blue-100 px-6 py-2 rounded-full mb-6">
+              <BookOpen className="text-green-600" size={20} />
+              <span className="text-green-800 font-semibold">最新动态</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-6">
+              新闻资讯
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              了解实验室最新研究进展、学术成果与重要活动
+            </p>
+          </div>
+          
+          <NewsSection />
+          
+          <div className="text-center mt-12">
+            <Link
+              href="/news"
+              className="group inline-flex items-center gap-3 bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-xl hover:shadow-green-500/25 transform hover:scale-105"
+            >
+              <BookOpen size={20} className="group-hover:animate-pulse" />
+              查看更多新闻
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
         </div>
       </section>
