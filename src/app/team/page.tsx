@@ -31,6 +31,13 @@ interface Graduate {
   position?: string
   email?: string
   company?: string
+  enrollmentDate?: string
+  graduationDate?: string
+  advisor?: string
+  degree?: string
+  discipline?: string
+  thesisTitle?: string
+  remarks?: string
 }
 
 const TeamPage = () => {
@@ -213,13 +220,25 @@ const TeamPage = () => {
                       姓名
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      职位
+                      入学时间
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      单位
+                      毕业时间
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      邮箱
+                      指导老师
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      学位
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      学科
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      论文题目
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      备注
                     </th>
                   </tr>
                 </thead>
@@ -230,15 +249,25 @@ const TeamPage = () => {
                         {graduate.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {graduate.position}
+                        {graduate.enrollmentDate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {graduate.company}
+                        {graduate.graduationDate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <a href={`mailto:${graduate.email}`} className="hover:text-blue-600">
-                          {graduate.email}
-                        </a>
+                        {graduate.advisor}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {graduate.degree}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {graduate.discipline}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={graduate.thesisTitle}>
+                        {graduate.thesisTitle}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={graduate.remarks}>
+                        {graduate.remarks}
                       </td>
                     </tr>
                   ))}
