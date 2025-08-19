@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
         // 请求凭证，从访问控制申请
         const access_key = process.env.DOUBAO_ACCESS_KEY;
         const secret_key = process.env.DOUBAO_SECRET_KEY;
+        const doubao_region = process.env.DOUBAO_REGION;
 
         // 请求Query，按照接口文档中填入即可
         const query_params: Record<string, string> = {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
         };
         const formatted_body = JSON.stringify(body_params);
 
-        const res = await signV4Request(access_key || '', secret_key || '', 'cv', formatted_query || '', formatted_body);
+        const res = await signV4Request(doubao_region || "", access_key || '', secret_key || '', 'cv', formatted_query || '', formatted_body);
         const binaryDataBase64 = JSON.parse(res)?.Result?.data?.binary_data_base64;
         let base64 = ""
         if (binaryDataBase64) {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
             // 确保uploads目录存在
             const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
             if (!fs.existsSync(uploadsDir)) {
-                fs.mkdirSync(uploadsDir, { recursive: true });
+                fs.mkdirSync(uploadsDir, {recursive: true});
             }
 
             // 生成唯一文件名

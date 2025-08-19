@@ -2,7 +2,6 @@ import * as crypto from 'crypto';
 
 const method = 'POST';
 const host = 'visual.volcengineapi.com';
-const region = 'cn-beijing';
 const endpoint = 'https://visual.volcengineapi.com';
 const service = 'cv';
 
@@ -33,7 +32,7 @@ function sha256Hex(data: string): string {
     return crypto.createHash('sha256').update(data, 'utf8').digest('hex');
 }
 
-export async function signV4Request(access_key: string, secret_key: string, service: string, req_query: string, req_body: string): Promise<string> {
+export async function signV4Request(region: string, access_key: string, secret_key: string, service: string, req_query: string, req_body: string): Promise<string> {
     if (!access_key || !secret_key) {
         console.log('No access key is available.');
         process.exit(1);
@@ -126,7 +125,7 @@ async function main() {
     };
     const formatted_body = JSON.stringify(body_params);
 
-    await signV4Request(access_key, secret_key, service, formatted_query, formatted_body);
+    await signV4Request("cn-beijing",access_key, secret_key, service, formatted_query, formatted_body);
 }
 
 
