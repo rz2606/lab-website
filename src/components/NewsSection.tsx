@@ -164,12 +164,6 @@ function NewsCard({ news, index }: NewsCardProps) {
             <div className="text-blue-500 text-4xl font-bold">新闻</div>
           </div>
         )}
-        {news.isPinned && (
-          <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 shadow-lg">
-            <Pin size={14} />
-            置顶
-          </div>
-        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </div>
       

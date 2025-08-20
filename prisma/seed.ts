@@ -6,6 +6,7 @@ const prisma = new PrismaClient()
 async function main() {
   // 清理现有数据
   await prisma.user.deleteMany()
+  await prisma.article.deleteMany()
   await prisma.news.deleteMany()
   await prisma.tool.deleteMany()
   await prisma.publication.deleteMany()
@@ -193,6 +194,95 @@ async function main() {
         email: 'majianguo@university.edu.cn',
         direction: '网络药理学',
         type: 'graduate_student'
+      }
+    })
+  ])
+
+  // 创建文章数据
+  const articles = await Promise.all([
+    prisma.article.create({
+      data: {
+        title: 'Deep Learning Approaches for Molecular Property Prediction',
+        authors: 'Zhang Wei, Li Ming, Wang Xiaoli',
+        journal: 'Nature Machine Intelligence',
+        publishedDate: new Date('2023-08-15'),
+        doi: '10.1038/s42256-023-00698-3',
+        abstract: 'We present a comprehensive study on deep learning methods for predicting molecular properties. Our approach combines graph neural networks with attention mechanisms to achieve state-of-the-art performance on multiple benchmark datasets. The proposed model demonstrates superior accuracy in predicting solubility, toxicity, and bioactivity compared to traditional machine learning methods.',
+        keywords: 'deep learning,molecular property,graph neural networks,drug discovery',
+        impactFactor: 25.898,
+        category: 'AI/ML',
+        citationCount: 156,
+        isOpenAccess: true,
+        createdBy: admin.id,
+        updatedBy: admin.id
+      }
+    }),
+    prisma.article.create({
+      data: {
+        title: 'Protein-Ligand Binding Affinity Prediction Using Transformer Networks',
+        authors: 'Chen Yifan, Liu Jie, Zhou Hao',
+        journal: 'Journal of Chemical Information and Modeling',
+        publishedDate: new Date('2023-06-20'),
+        doi: '10.1021/acs.jcim.3c00567',
+        abstract: 'This work introduces a novel transformer-based architecture for predicting protein-ligand binding affinity. By leveraging self-attention mechanisms and molecular fingerprints, our model achieves remarkable accuracy on the PDBbind dataset. The approach shows significant improvements over existing methods and provides interpretable attention maps for understanding binding interactions.',
+        keywords: 'protein-ligand binding,transformer,attention mechanism,drug design',
+        impactFactor: 4.956,
+        category: 'Computational Biology',
+        citationCount: 89,
+        isOpenAccess: false,
+        createdBy: admin.id,
+        updatedBy: admin.id
+      }
+    }),
+    prisma.article.create({
+      data: {
+        title: 'AI-Driven Drug Repurposing for COVID-19 Treatment',
+        authors: 'Wang Lei, Zhang Mei, Li Qiang, Chen Xin',
+        journal: 'Science Translational Medicine',
+        publishedDate: new Date('2023-03-10'),
+        doi: '10.1126/scitranslmed.abq7892',
+        abstract: 'We developed an AI-powered platform for identifying existing drugs that could be repurposed for COVID-19 treatment. Using a combination of knowledge graphs and machine learning algorithms, we screened over 10,000 approved drugs and identified several promising candidates. Experimental validation confirmed the antiviral activity of three compounds.',
+        keywords: 'drug repurposing,COVID-19,artificial intelligence,antiviral drugs',
+        impactFactor: 17.956,
+        category: 'Drug Discovery',
+        citationCount: 234,
+        isOpenAccess: true,
+        createdBy: admin.id,
+        updatedBy: admin.id
+      }
+    }),
+    prisma.article.create({
+      data: {
+        title: 'Quantum Machine Learning for Molecular Simulation',
+        authors: 'Liu Xiaoming, Yang Ting',
+        journal: 'Nature Computational Science',
+        publishedDate: new Date('2023-11-05'),
+        doi: '10.1038/s43588-023-00512-8',
+        abstract: 'We explore the application of quantum machine learning algorithms to molecular simulation problems. Our quantum-enhanced variational algorithm demonstrates exponential speedup for certain molecular property calculations compared to classical methods. This work opens new avenues for quantum advantage in computational chemistry.',
+        keywords: 'quantum machine learning,molecular simulation,quantum computing,variational algorithms',
+        impactFactor: 12.345,
+        category: 'Quantum Computing',
+        citationCount: 67,
+        isOpenAccess: false,
+        createdBy: user.id,
+        updatedBy: user.id
+      }
+    }),
+    prisma.article.create({
+      data: {
+        title: 'Federated Learning for Privacy-Preserving Drug Discovery',
+        authors: 'Zhou Bin, Huang Yan, Wu Gang',
+        journal: 'Nature Communications',
+        publishedDate: new Date('2023-09-22'),
+        doi: '10.1038/s41467-023-41234-x',
+        abstract: 'We propose a federated learning framework that enables collaborative drug discovery while preserving data privacy. Our approach allows pharmaceutical companies to jointly train machine learning models without sharing sensitive molecular data. The framework demonstrates comparable performance to centralized learning while maintaining strict privacy guarantees.',
+        keywords: 'federated learning,privacy preservation,drug discovery,collaborative learning',
+        impactFactor: 16.234,
+        category: 'Privacy & Security',
+        citationCount: 123,
+        isOpenAccess: true,
+        createdBy: user.id,
+        updatedBy: user.id
       }
     })
   ])
@@ -692,6 +782,7 @@ async function main() {
   console.log(`创建了 ${researchers.length} 个研究人员记录`)
   console.log(`创建了 ${graduates.length} 个毕业生记录`)
   console.log(`创建了 ${publications.length} 个发表成果记录`)
+  console.log(`创建了 ${articles.length} 个文章记录`)
   console.log(`创建了 ${tools.length} 个工具记录`)
   console.log(`创建了 ${news.length} 个新闻记录`)
   console.log('\n=== 测试账户信息 ===')

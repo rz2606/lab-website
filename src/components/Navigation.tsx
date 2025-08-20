@@ -11,6 +11,7 @@ const Navigation = () => {
     { name: '首页', href: '/' },
     { name: '团队成员', href: '/team' },
     { name: '发表成果', href: '/publications' },
+    { name: '学术文章', href: '/articles' },
     { name: '程序开发', href: '/tools' },
     { name: '获奖名单', href: '/awards' },
     { name: '新闻动态', href: '/news' },

@@ -166,6 +166,40 @@ model News {
   @@map("news")
 }
 
+// 学术文章
+model Article {
+  id             Int      @id @default(autoincrement())
+  title          String   @db.Text // 文章标题
+  authors        String   @db.Text // 作者列表
+  journal        String   // 期刊名称
+  volume         String?  // 卷号
+  issue          String?  // 期号
+  pages          String?  // 页码
+  publishedDate  DateTime // 发表日期
+  doi            String?  // DOI
+  pmid           String?  // PubMed ID
+  abstract       String?  @db.Text // 摘要
+  keywords       String?  @db.Text // 关键词，用逗号分隔
+  impactFactor   Float?   // 影响因子
+  citationCount  Int?     @default(0) // 引用次数
+  url            String?  // 文章链接
+  pdfUrl         String?  // PDF链接
+  category       String?  @default("research") // 文章类型：research, review, letter等
+  isOpenAccess   Boolean  @default(false) // 是否开放获取
+  language       String   @default("en") // 语言
+  status         String   @default("published") // 状态：published, in_press, submitted
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      Int?     // 创建人
+  updatedBy      Int?     // 修改人
+  
+  // 关联关系
+  creator        User?    @relation("ArticleCreatedBy", fields: [createdBy], references: [id])
+  updater        User?    @relation("ArticleUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("articles")
+}
+
 // 用户表
 model User {
   id        Int      @id @default(autoincrement())
@@ -195,6 +229,8 @@ model User {
   updatedTools        Tool[]        @relation("ToolUpdatedBy")
   createdNews         News[]        @relation("NewsCreatedBy")
   updatedNews         News[]        @relation("NewsUpdatedBy")
+  createdArticles     Article[]     @relation("ArticleCreatedBy")
+  updatedArticles     Article[]     @relation("ArticleUpdatedBy")
 
   @@map("users")
 }

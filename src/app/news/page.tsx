@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, User, Pin } from 'lucide-react'
+import { Calendar, Clock } from 'lucide-react'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
@@ -203,12 +203,6 @@ const NewsPage = () => {
                 </div>
                 <div className="md:w-1/2 p-8">
                   <div className="flex items-center mb-4">
-                    {sortedNews[0].isPinned && (
-                      <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded mr-3 flex items-center gap-1">
-                        <Pin size={12} />
-                        置顶
-                      </span>
-                    )}
                     <div className="flex items-center text-gray-500 text-sm">
                       <Calendar size={14} className="mr-1" />
                       {new Date(sortedNews[0].createdAt).toLocaleDateString()}
@@ -241,12 +235,7 @@ const NewsPage = () => {
               {/* News Image */}
               <div className="h-48 bg-gray-200 flex items-center justify-center relative">
 
-                {item.isPinned && (
-                  <div className="absolute top-2 right-2 bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded flex items-center gap-1">
-                    <Pin size={12} />
-                    置顶
-                  </div>
-                )}
+
                 {item.image ? (
                   <Image 
                     src={item.image} 

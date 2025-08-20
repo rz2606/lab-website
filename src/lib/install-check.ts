@@ -80,7 +80,11 @@ export async function isDatabaseConfigured(): Promise<boolean> {
  * 获取安装信息
  * @returns Promise<object | null> 返回安装信息或null
  */
-export async function getInstallationInfo(): Promise<any> {
+export async function getInstallationInfo(): Promise<{
+  status: string;
+  timestamp?: string;
+  version?: string;
+} | null> {
   try {
     const projectRoot = process.cwd()
     const installFlagPath = path.join(projectRoot, '.installed')
