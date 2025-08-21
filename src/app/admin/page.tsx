@@ -12,6 +12,7 @@ import PublicationsTab from '@/components/admin/tabs/PublicationsTab'
 import ToolsTab from '@/components/admin/tabs/ToolsTab'
 import NewsTab from '@/components/admin/tabs/NewsTab'
 import AchievementsTab from '@/components/admin/tabs/AchievementsTab'
+import FooterManagement from '@/components/admin/FooterManagement'
 
 // 导入通用组件
 import ErrorBoundary from '@/components/admin/common/ErrorBoundary'
@@ -218,7 +219,12 @@ const SettingsTab: React.FC = () => {
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">系统设置</h2>
-        <p className="text-gray-600">系统设置功能正在开发中...</p>
+        <div className="space-y-6">
+          {/* 页脚管理 */}
+          <div>
+            <FooterManagement />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -296,6 +302,7 @@ function AdminPage() {
         return <NewsTab />
       case 'achievements':
         return <AchievementsTab />
+
       case 'analytics':
         return <AnalyticsTab />
       case 'settings':

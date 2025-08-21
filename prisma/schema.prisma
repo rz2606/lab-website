@@ -231,6 +231,32 @@ model User {
   updatedNews         News[]        @relation("NewsUpdatedBy")
   createdArticles     Article[]     @relation("ArticleCreatedBy")
   updatedArticles     Article[]     @relation("ArticleUpdatedBy")
+  createdFooters      Footer[]      @relation("FooterCreatedBy")
+  updatedFooters      Footer[]      @relation("FooterUpdatedBy")
 
   @@map("users")
+}
+
+// 网站页脚配置
+model Footer {
+  id          Int      @id @default(autoincrement())
+  title       String   // 课题组名称
+  description String   @db.Text // 课题组描述
+  copyright   String   // 版权信息
+  icp         String?  // 备案号
+  email       String?  // 联系邮箱
+  phone       String?  // 联系电话
+  address     String?  // 联系地址
+  links       String?  @db.Text // 友情链接，JSON格式存储
+  isActive    Boolean  @default(true) // 是否启用
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int?     // 创建人
+  updatedBy   Int?     // 修改人
+  
+  // 关联关系
+  creator     User?    @relation("FooterCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("FooterUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("footers")
 }
