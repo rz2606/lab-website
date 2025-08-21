@@ -18,7 +18,81 @@ import ErrorBoundary from '@/components/admin/common/ErrorBoundary'
 import LoadingSpinner from '@/components/admin/common/LoadingSpinner'
 
 // 仪表板组件
-const DashboardTab: React.FC = () => {
+interface DashboardTabProps {
+  onTabChange: (tab: string) => void
+}
+
+const DashboardTab: React.FC<DashboardTabProps> = ({ onTabChange }) => {
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // 获取统计数据
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/dashboard/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('获取统计数据失败')
+        }
+
+        const data = await response.json()
+        setStats(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '获取统计数据失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              重新加载
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow">
@@ -26,34 +100,97 @@ const DashboardTab: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="text-sm font-medium text-blue-600">用户总数</h3>
-            <p className="text-2xl font-bold text-blue-900">--</p>
+            <p className="text-2xl font-bold text-blue-900">{stats?.overview?.userCount || 0}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <h3 className="text-sm font-medium text-green-600">发表成果</h3>
-            <p className="text-2xl font-bold text-green-900">--</p>
+            <p className="text-2xl font-bold text-green-900">{stats?.overview?.publicationCount || 0}</p>
           </div>
           <div className="bg-yellow-50 p-4 rounded-lg">
             <h3 className="text-sm font-medium text-yellow-600">工具数量</h3>
-            <p className="text-2xl font-bold text-yellow-900">--</p>
+            <p className="text-2xl font-bold text-yellow-900">{stats?.overview?.toolCount || 0}</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg">
             <h3 className="text-sm font-medium text-purple-600">新闻动态</h3>
-            <p className="text-2xl font-bold text-purple-900">--</p>
+            <p className="text-2xl font-bold text-purple-900">{stats?.overview?.newsCount || 0}</p>
           </div>
         </div>
       </div>
+      
+      {/* 最近动态 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 最新新闻 */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">最新新闻</h3>
+          <div className="space-y-3">
+            {stats?.recent?.news?.slice(0, 5).map((news: any) => (
+              <div key={news.id} className="border-l-4 border-purple-500 pl-3">
+                <h4 className="text-sm font-medium text-gray-900 truncate">{news.title}</h4>
+                <p className="text-xs text-gray-500">
+                  {new Date(news.createdAt).toLocaleDateString()}
+                  {news.isPinned && <span className="ml-2 text-red-500">📌</span>}
+                </p>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-sm">暂无新闻</p>
+            )}
+          </div>
+        </div>
+
+        {/* 最新发表成果 */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">最新发表</h3>
+          <div className="space-y-3">
+            {stats?.recent?.publications?.slice(0, 5).map((pub: any) => (
+              <div key={pub.id} className="border-l-4 border-green-500 pl-3">
+                <h4 className="text-sm font-medium text-gray-900 truncate">{pub.title}</h4>
+                <p className="text-xs text-gray-500">
+                  {pub.journal} ({pub.year})
+                </p>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-sm">暂无发表成果</p>
+            )}
+          </div>
+        </div>
+
+        {/* 最新工具 */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">最新工具</h3>
+          <div className="space-y-3">
+            {stats?.recent?.tools?.slice(0, 5).map((tool: any) => (
+              <div key={tool.id} className="border-l-4 border-yellow-500 pl-3">
+                <h4 className="text-sm font-medium text-gray-900 truncate">{tool.name}</h4>
+                <p className="text-xs text-gray-500 truncate">{tool.description}</p>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-sm">暂无工具</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">快速操作</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-            <h4 className="font-medium text-gray-900">添加用户</h4>
-            <p className="text-sm text-gray-500">创建新的系统用户</p>
+          <button 
+            onClick={() => onTabChange('users')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors"
+          >
+            <h4 className="font-medium text-gray-900">用户管理</h4>
+            <p className="text-sm text-gray-500">管理系统用户</p>
           </button>
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button 
+            onClick={() => onTabChange('news')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors"
+          >
             <h4 className="font-medium text-gray-900">发布新闻</h4>
             <p className="text-sm text-gray-500">发布最新动态</p>
           </button>
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button 
+            onClick={() => onTabChange('analytics')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors"
+          >
             <h4 className="font-medium text-gray-900">数据分析</h4>
             <p className="text-sm text-gray-500">查看系统统计</p>
           </button>
@@ -146,7 +283,7 @@ function AdminPage() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardTab />
+        return <DashboardTab onTabChange={setActiveTab} />
       case 'users':
         return <UsersTab />
       case 'team':
@@ -164,7 +301,7 @@ function AdminPage() {
       case 'settings':
         return <SettingsTab />
       default:
-        return <DashboardTab />
+        return <DashboardTab onTabChange={setActiveTab} />
     }
   }
 

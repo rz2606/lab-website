@@ -4,6 +4,7 @@ import { Newspaper, FileText, Image as ImageIcon } from 'lucide-react'
 import UnifiedForm from '@/components/common/UnifiedForm'
 import UnifiedFormField from '@/components/common/UnifiedFormField'
 import ImageUploadWithAI from '../common/ImageUploadWithAI'
+import RichTextEditor from '@/components/RichTextEditor'
 import { News } from '../../../types/admin'
 
 interface NewsFormProps {
@@ -74,13 +75,21 @@ const NewsForm: React.FC<NewsFormProps> = ({ news, onSubmit, onCancel, loading =
         />
 
         {/* 新闻内容 */}
-        <UnifiedFormField
-          name="content"
+        <Form.Item
           label="新闻内容"
-          type="textarea"
-          placeholder="请输入新闻详细内容"
-          validationType="news"
-        />
+          name="content"
+          rules={[{ required: true, message: '请输入新闻内容' }]}
+        >
+          <Form.Item noStyle shouldUpdate>
+            {() => (
+              <RichTextEditor
+                value={form.getFieldValue('content') || ''}
+                onChange={(value: string) => form.setFieldsValue({ content: value })}
+                placeholder="请输入新闻详细内容"
+              />
+            )}
+          </Form.Item>
+        </Form.Item>
 
         {/* 图片 */}
         <Form.Item

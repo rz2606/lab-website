@@ -2,6 +2,7 @@
 
 import { Calendar, User } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
 interface News {
@@ -74,9 +75,9 @@ const NewsPage = () => {
       summary: "我们的最新研究'Leveraging Electron Clouds as a Latent Variable to Scale Up Structure: Insect Molecular Design'被Nature Computational Science接收发表。",
       content: "这项研究提出了一种创新的分子设计方法，通过将电子云作为潜在变量来扩展结构设计，在昆虫分子设计领域取得了重要突破。该方法能够显著提高分子设计的效率和准确性，为药物发现提供了新的思路和工具。",
       image: "/api/placeholder/400/250",
+      isPinned: true,
       createdAt: "2024-12-15",
-      author: "张教授",
-      tags: ["学术成果", "论文发表", "分子设计"]
+      updatedAt: "2024-12-15"
     },
     {
       id: 2,
@@ -84,9 +85,9 @@ const NewsPage = () => {
       summary: "我们申请的'基于人工智能的智能化药物设计关键技术研究'项目获得国家自然科学基金重点项目资助，资助金额300万元。",
       content: "该项目将重点研究基于深度学习的分子生成算法、药物-靶点相互作用预测模型以及多目标药物优化方法。项目执行期为4年，预期将在智能化药物设计领域取得重要进展，培养一批高水平研究人才。",
       image: "/api/placeholder/400/250",
+      isPinned: false,
       createdAt: "2024-11-20",
-      author: "课题组",
-      tags: ["项目资助", "科研基金", "人工智能"]
+      updatedAt: "2024-11-20"
     },
     {
       id: 3,
@@ -94,9 +95,9 @@ const NewsPage = () => {
       summary: "由我们课题组主办的第三届智能化药物设计国际研讨会在北京成功举办，来自全球20多个国家的200余名专家学者参会。",
       content: "本次研讨会以'AI驱动的药物发现：机遇与挑战'为主题，邀请了多位国际知名专家作主题报告，深入探讨了人工智能在药物设计中的最新进展和未来发展方向。会议促进了国际合作与交流，推动了领域发展。",
       image: "/api/placeholder/400/250",
+      isPinned: false,
       createdAt: "2024-10-15",
-      author: "会务组",
-      tags: ["学术会议", "国际交流", "药物设计"]
+      updatedAt: "2024-10-15"
     },
     {
       id: 4,
@@ -274,9 +275,12 @@ const NewsPage = () => {
                 </p>
 
                 {/* Read More */}
-                <button className="text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors">
+                <Link 
+                  href={`/news/${item.id}`}
+                  className="text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors inline-block"
+                >
                   阅读更多 →
-                </button>
+                </Link>
               </div>
             </article>
           ))}

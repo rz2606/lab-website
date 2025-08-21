@@ -128,7 +128,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       `}>
         <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
           <div>
-            © 2024 实验室管理系统. 保留所有权利.
+            © 2025 实验室管理系统. 保留所有权利.
           </div>
           <div className="flex items-center space-x-4 text-xs">
             <span>版本 v1.0.0</span>

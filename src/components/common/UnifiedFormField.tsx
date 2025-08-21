@@ -150,8 +150,8 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
       baseRules.push(validationRules.common.required(`请输入${label || name}`))
     }
     
-    if (validationType && validationRules[validationType]) {
-      const typeRules = validationRules[validationType][name]
+    if (validationType && validationRules[validationType as keyof typeof validationRules]) {
+      const typeRules = (validationRules[validationType as keyof typeof validationRules] as any)[name]
       if (typeRules) {
         baseRules = [...baseRules, ...typeRules]
       }
@@ -167,43 +167,68 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
   
   // 渲染不同类型的字段
   const renderField = () => {
-    const commonProps = {
+    const baseProps = {
       placeholder: placeholder || `请输入${label || name}`,
       disabled,
-      onChange: onChange ? (value: string | number | boolean | Date | null) => {
-          // 这里需要获取 form 实例，暂时传 null
-          onChange(value, null)
-        } : undefined,
       ...fieldProps,
     }
     
     switch (type) {
       case 'input':
-        return <Input {...commonProps} {...formStyles.input.standard} />
+        return (
+          <Input 
+            {...baseProps} 
+            {...formStyles.input.standard}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
       
       case 'textarea':
-        return <TextArea {...commonProps} {...formStyles.input.textarea} />
+        return (
+          <TextArea 
+            {...baseProps} 
+            {...formStyles.input.textarea}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
       
       case 'password':
-        return <Password {...commonProps} {...formStyles.input.standard} />
+        return (
+          <Password 
+            {...baseProps} 
+            {...formStyles.input.standard}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
       
       case 'search':
-        return <Search {...commonProps} {...formStyles.input.search} />
+        return (
+          <Search 
+            {...baseProps} 
+            {...formStyles.input.search}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
       
       case 'number':
         return (
           <InputNumber
-            {...commonProps}
-            style={{ width: '100%', ...formStyles.input.standard.style }}
+            {...baseProps}
+            style={{ width: '100%' }}
             {...formStyles.input.standard}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
           />
         )
       
       case 'select':
         return (
-          <Select {...commonProps} {...formStyles.select.standard}>
+          <Select 
+            {...baseProps} 
+            {...formStyles.select.standard}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+          >
             {options.map((option) => (
-              <Option key={option.value} value={option.value} disabled={option.disabled}>
+              <Option key={String(option.value)} value={option.value} disabled={option.disabled}>
                 {option.label}
               </Option>
             ))}
@@ -212,9 +237,13 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
       
       case 'multiSelect':
         return (
-          <Select {...commonProps} {...formStyles.select.multiple}>
+          <Select 
+            {...baseProps} 
+            {...formStyles.select.multiple}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+          >
             {options.map((option) => (
-              <Option key={option.value} value={option.value} disabled={option.disabled}>
+              <Option key={String(option.value)} value={option.value} disabled={option.disabled}>
                 {option.label}
               </Option>
             ))}
@@ -223,9 +252,13 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
       
       case 'tags':
         return (
-          <Select {...commonProps} {...formStyles.select.tags}>
+          <Select 
+            {...baseProps} 
+            {...formStyles.select.tags}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+          >
             {options.map((option) => (
-              <Option key={option.value} value={option.value} disabled={option.disabled}>
+              <Option key={String(option.value)} value={option.value} disabled={option.disabled}>
                 {option.label}
               </Option>
             ))}
@@ -233,27 +266,59 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
         )
       
       case 'date':
-        return <DatePicker {...commonProps} {...formStyles.datePicker.standard} />
+        return (
+          <DatePicker 
+            {...baseProps} 
+            {...formStyles.datePicker.standard}
+            onChange={onChange ? (date) => onChange(date?.toDate() || null, null) : undefined}
+          />
+        )
       
       case 'dateRange':
-        return <RangePicker {...commonProps} {...formStyles.datePicker.range} />
+        return (
+          <RangePicker 
+            {...baseProps} 
+            {...formStyles.datePicker.range}
+            onChange={onChange ? (dates) => onChange(dates, null) : undefined}
+          />
+        )
       
       case 'datetime':
-        return <DatePicker {...commonProps} {...formStyles.datePicker.datetime} />
+        return (
+          <DatePicker 
+            {...baseProps} 
+            {...formStyles.datePicker.datetime}
+            onChange={onChange ? (date) => onChange(date?.toDate() || null, null) : undefined}
+          />
+        )
       
       case 'time':
-        return <TimePicker {...commonProps} style={{ width: '100%' }} />
+        return (
+          <TimePicker 
+            {...baseProps} 
+            style={{ width: '100%' }}
+            onChange={onChange ? (time) => onChange(time?.toDate() || null, null) : undefined}
+          />
+        )
       
       case 'upload':
         return (
-          <Upload {...commonProps} {...formStyles.upload.file}>
+          <Upload 
+            {...baseProps} 
+            {...formStyles.upload.file}
+            onChange={onChange ? (info) => onChange(info.fileList, null) : undefined}
+          >
             <Button icon={<UploadOutlined />}>点击上传</Button>
           </Upload>
         )
       
       case 'imageUpload':
         return (
-          <Upload {...commonProps} {...formStyles.upload.image}>
+          <Upload 
+            {...baseProps} 
+            {...formStyles.upload.image}
+            onChange={onChange ? (info) => onChange(info.fileList, null) : undefined}
+          >
             <div>
               <PlusOutlined />
               <div style={{ marginTop: 8 }}>上传图片</div>
@@ -263,7 +328,11 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
       
       case 'draggerUpload':
         return (
-          <Dragger {...commonProps} {...formStyles.upload.dragger}>
+          <Dragger 
+            {...baseProps} 
+            {...formStyles.upload.dragger}
+            onChange={onChange ? (info) => onChange(info.fileList, null) : undefined}
+          >
             <p className="ant-upload-drag-icon">
               <UploadOutlined />
             </p>
@@ -273,13 +342,21 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
         )
       
       case 'switch':
-        return <Switch {...commonProps} />
+        return (
+          <Switch 
+            {...baseProps}
+            onChange={onChange ? (checked) => onChange(checked, null) : undefined}
+          />
+        )
       
       case 'radio':
         return (
-          <RadioGroup {...commonProps}>
+          <RadioGroup 
+            {...baseProps}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          >
             {options.map((option) => (
-              <Radio key={option.value} value={option.value} disabled={option.disabled}>
+              <Radio key={String(option.value)} value={option.value} disabled={option.disabled}>
                 {option.label}
               </Radio>
             ))}
@@ -287,60 +364,96 @@ const UnifiedFormField: React.FC<UnifiedFormFieldProps> = ({
         )
       
       case 'checkbox':
-        return <Checkbox {...commonProps}>{label}</Checkbox>
+        return (
+          <Checkbox 
+            {...baseProps}
+            onChange={onChange ? (e) => onChange(e.target.checked, null) : undefined}
+          >
+            {label}
+          </Checkbox>
+        )
       
       case 'checkboxGroup':
         return (
-          <CheckboxGroup {...commonProps} options={options} />
+          <CheckboxGroup 
+            {...baseProps}
+            options={options.map(opt => ({ ...opt, value: String(opt.value) }))}
+            onChange={onChange ? (checkedValues) => onChange(checkedValues, null) : undefined}
+          />
         )
       
       case 'rate':
-        return <Rate {...commonProps} />
+        return (
+          <Rate 
+            {...baseProps}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+          />
+        )
       
       case 'slider':
-        return <Slider {...commonProps} />
+        return (
+          <Slider 
+            {...baseProps}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+          />
+        )
       
       case 'treeSelect':
         return (
           <TreeSelect
-            {...commonProps}
-            treeData={options}
+            {...baseProps}
+            treeData={options.map(opt => ({ ...opt, value: String(opt.value) })) as any}
             style={{ width: '100%' }}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
           />
         )
       
       case 'cascader':
         return (
           <Cascader
-            {...commonProps}
-            options={options}
+            {...baseProps}
+            options={options.map(opt => ({ ...opt, value: String(opt.value) })) as any}
             style={{ width: '100%' }}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
           />
         )
       
       case 'autoComplete':
         return (
           <AutoComplete
-            {...commonProps}
-            options={options}
+            {...baseProps}
             style={{ width: '100%' }}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
+            options={options.map(opt => ({ ...opt, value: String(opt.value) }))}
           />
         )
       
       case 'mentions':
         return (
           <Mentions
-            {...commonProps}
-            options={options}
+            {...baseProps}
+            options={options.map(opt => ({ ...opt, value: String(opt.value) }))}
             style={{ width: '100%' }}
+            onChange={onChange ? (value) => onChange(value, null) : undefined}
           />
         )
       
       case 'custom':
-        return customRender ? customRender(commonProps) : null
+        return customRender ? customRender(baseProps) : (
+          <Input 
+            {...baseProps}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
       
       default:
-        return <Input {...commonProps} {...formStyles.input.standard} />
+        return (
+          <Input 
+            {...baseProps} 
+            {...formStyles.input.standard}
+            onChange={onChange ? (e) => onChange(e.target.value, null) : undefined}
+          />
+        )
     }
   }
   
