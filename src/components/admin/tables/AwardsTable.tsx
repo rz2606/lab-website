@@ -1,17 +1,17 @@
 import React from 'react'
-import { Edit, Trash2, Award, ExternalLink, Calendar, User, Trophy, Medal } from 'lucide-react'
-import type { AwardWinner, PaginationInfo } from '@/types/admin'
+import { Edit, Trash2, Award as AwardIcon, Calendar, User } from 'lucide-react'
+import type { Award, PaginationInfo } from '@/types/admin'
 import { TableLoadingRow } from '../common/LoadingSpinner'
 import { TableErrorRow } from '../common/ErrorBoundary'
 import Pagination from '../common/Pagination'
 
 interface AwardsTableProps {
-  awards: AwardWinner[]
+  awards: Award[]
   loading: boolean
   error: string | null
   pagination: PaginationInfo
-  onEdit: (award: AwardWinner) => void
-  onDelete: (award: AwardWinner) => void
+  onEdit: (award: Award) => void
+  onDelete: (award: Award) => void
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
 }
@@ -20,132 +20,22 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
   awards = [],
   loading = false,
   error = null,
-  pagination = { currentPage: 1, totalPages: 1, pageSize: 10, totalItems: 0 },
+  pagination = { currentPage: 1, totalPages: 1, pageSize: 10, total: 0 },
   onEdit,
   onDelete,
   onPageChange,
   onPageSizeChange
 }) => {
-  // 获取奖项级别样式
-  const getLevelBadgeClass = (level: string) => {
-    switch (level?.toLowerCase()) {
-      case 'international':
-        return 'bg-purple-100 text-purple-800'
-      case 'national':
-        return 'bg-red-100 text-red-800'
-      case 'provincial':
-        return 'bg-blue-100 text-blue-800'
-      case 'municipal':
-        return 'bg-green-100 text-green-800'
-      case 'institutional':
-        return 'bg-yellow-100 text-yellow-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  // 获取奖项级别显示文本
-  const getLevelText = (level: string) => {
-    switch (level?.toLowerCase()) {
-      case 'international':
-        return '国际级'
-      case 'national':
-        return '国家级'
-      case 'provincial':
-        return '省级'
-      case 'municipal':
-        return '市级'
-      case 'institutional':
-        return '校级'
-      default:
-        return level
-    }
-  }
-
-  // 获取奖项类型样式
-  const getTypeBadgeClass = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'research':
-        return 'bg-blue-100 text-blue-800'
-      case 'teaching':
-        return 'bg-green-100 text-green-800'
-      case 'innovation':
-        return 'bg-purple-100 text-purple-800'
-      case 'service':
-        return 'bg-orange-100 text-orange-800'
-      case 'competition':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  // 获取奖项类型显示文本
-  const getTypeText = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'research':
-        return '科研'
-      case 'teaching':
-        return '教学'
-      case 'innovation':
-        return '创新'
-      case 'service':
-        return '服务'
-      case 'competition':
-        return '竞赛'
-      default:
-        return type
-    }
-  }
-
-  // 获取奖项等级图标
-  const getRankIcon = (rank: string) => {
-    switch (rank?.toLowerCase()) {
-      case 'first':
-      case '一等奖':
-      case '第一名':
-        return <Trophy className="h-4 w-4 text-yellow-500" />
-      case 'second':
-      case '二等奖':
-      case '第二名':
-        return <Medal className="h-4 w-4 text-gray-400" />
-      case 'third':
-      case '三等奖':
-      case '第三名':
-        return <Medal className="h-4 w-4 text-orange-500" />
-      default:
-        return <Award className="h-4 w-4 text-blue-500" />
-    }
-  }
-
   // 格式化日期
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('zh-CN')
-    } catch {
-      return dateString
-    }
+  const formatDate = (date: string | null) => {
+    if (!date) return '未知'
+    return date
   }
 
   // 截断文本
-  const truncateText = (text: string, maxLength: number) => {
-    if (text?.length <= maxLength) return text
-    return text?.substring(0, maxLength) + '...'
-  }
-
-  // 渲染获奖者列表
-  const renderWinners = (winners: string[]) => {
-    if (!winners || winners.length === 0) return '未知'
-    
-    if (winners?.length === 1) {
-      return winners[0]
-    }
-    
-    if (winners?.length <= 3) {
-      return winners.join(', ')
-    }
-    
-    return `${winners.slice(0, 2).join(', ')} 等 ${winners.length} 人`
+  const truncateText = (text: string | null, maxLength: number) => {
+    if (!text) return ''
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text
   }
 
   return (
@@ -157,22 +47,22 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  奖项信息
+                  序号
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  类型
+                  获奖人员
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  级别
+                  获奖时间
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  获奖者
+                  获奖名称及等级
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  颁发机构
+                  指导老师
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  获奖日期
+                  备注
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作
@@ -194,7 +84,7 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
               {!loading && !error && awards && awards.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
-                    <Award className="mx-auto h-12 w-12 text-gray-400" />
+                    <AwardIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-500">暂无获奖数据</p>
                   </td>
                 </tr>
@@ -202,60 +92,24 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
               
               {!loading && !error && awards && awards.map((award) => (
                 <tr key={award.id} className="hover:bg-gray-50">
-                  {/* 奖项信息 */}
-                  <td className="px-6 py-4">
-                    <div className="max-w-sm">
-                      <div className="flex items-center mb-1">
-                        {getRankIcon(award.rank)}
-                        <div className="ml-2 text-sm font-medium text-gray-900" title={award.awardName}>
-                          {truncateText(award.awardName, 30)}
-                        </div>
-                      </div>
-                      {award.rank && (
-                        <div className="text-xs text-gray-500 mb-1">
-                          {award.rank}
-                        </div>
-                      )}
-                      {award.description && (
-                        <div className="text-xs text-gray-500" title={award.description}>
-                          {truncateText(award.description, 80)}
-                        </div>
-                      )}
+                  {/* 序号 */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {award.serialNumber || '-'}
                     </div>
                   </td>
                   
-                  {/* 类型 */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(award.type)}`}>
-                      {getTypeText(award.type)}
-                    </span>
-                  </td>
-                  
-                  {/* 级别 */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLevelBadgeClass(award.level)}`}>
-                      {getLevelText(award.level)}
-                    </span>
-                  </td>
-                  
-                  {/* 获奖者 */}
+                  {/* 获奖人员 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="h-4 w-4 text-gray-400 mr-2" />
-                      <div className="text-sm text-gray-900" title={award.winners?.join(', ')}>
-                        {renderWinners(award.winners)}
+                      <div className="text-sm text-gray-900" title={award.awardee}>
+                        {truncateText(award.awardee, 30)}
                       </div>
                     </div>
                   </td>
                   
-                  {/* 颁发机构 */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900" title={award.organization}>
-                      {truncateText(award.organization, 20)}
-                    </div>
-                  </td>
-                  
-                  {/* 获奖日期 */}
+                  {/* 获奖时间 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-1" />
@@ -263,20 +117,32 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
                     </div>
                   </td>
                   
+                  {/* 获奖名称及等级 */}
+                  <td className="px-6 py-4">
+                    <div className="max-w-sm">
+                      <div className="text-sm font-medium text-gray-900" title={award.awardName}>
+                        {truncateText(award.awardName, 50)}
+                      </div>
+                    </div>
+                  </td>
+                  
+                  {/* 指导老师 */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {award.advisor || '-'}
+                    </div>
+                  </td>
+                  
+                  {/* 备注 */}
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-500" title={award.remarks || ''}>
+                      {truncateText(award.remarks, 30) || '-'}
+                    </div>
+                  </td>
+                  
                   {/* 操作 */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {award.certificateUrl && (
-                        <a
-                          href={award.certificateUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
-                          title="查看证书"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      )}
                       <button
                         onClick={() => onEdit(award)}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
@@ -306,7 +172,7 @@ const AwardsTable: React.FC<AwardsTableProps> = ({
           pagination={{
             currentPage: pagination.currentPage,
             pageSize: pagination.pageSize,
-            total: pagination.totalItems || 0,
+            total: pagination.total || 0,
             totalPages: pagination.totalPages
           }}
           onPageChange={onPageChange}

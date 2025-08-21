@@ -6,12 +6,15 @@ import {
   Tool,
   News,
   TeamMember,
-  AwardWinner,
+  Award,
   Article,
   PaginationState,
   AdminTabType,
   ApiResponse
 } from '@/types/admin'
+
+// 表单提交数据类型
+type FormSubmitData = Record<string, any>
 import { clearAuth, getToken } from '@/lib/auth'
 
 export const useAdminData = () => {
@@ -25,7 +28,7 @@ export const useAdminData = () => {
   const [tools, setTools] = useState<Tool[]>([])
   const [news, setNews] = useState<News[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [awards, setAwards] = useState<AwardWinner[]>([])
+  const [awards, setAwards] = useState<Award[]>([])
   const [articles, setArticles] = useState<Article[]>([])
   
   // 分页状态
@@ -34,6 +37,7 @@ export const useAdminData = () => {
     publications: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
     tools: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
     news: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
+    team: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
     awards: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 },
     articles: { currentPage: 1, pageSize: 10, total: 0, totalPages: 0 }
   })
@@ -162,12 +166,10 @@ export const useAdminData = () => {
         setPagination(prev => ({
           ...prev,
           [type]: {
-            currentPage: data.pagination!.page || data.pagination!.currentPage,
-            pageSize: data.pagination!.limit || data.pagination!.pageSize,
-            total: data.pagination!.total,
-            totalPages: data.pagination!.totalPages,
-            hasNext: data.pagination!.hasNext,
-            hasPrev: data.pagination!.hasPrev
+            currentPage: data.pagination!.page || data.pagination!.currentPage || 1,
+            pageSize: data.pagination!.limit || data.pagination!.pageSize || 10,
+            total: data.pagination!.total || 0,
+            totalPages: data.pagination!.totalPages || 0
           }
         }))
       }
@@ -176,22 +178,22 @@ export const useAdminData = () => {
       const dataArray = data.data && Array.isArray(data.data) ? data.data : []
       switch (type) {
         case 'users':
-          setUsers(dataArray)
+          setUsers(dataArray as User[])
           break
         case 'publications':
-          setPublications(dataArray)
+          setPublications(dataArray as Publication[])
           break
         case 'tools':
-          setTools(dataArray)
+          setTools(dataArray as Tool[])
           break
         case 'news':
-          setNews(dataArray)
+          setNews(dataArray as News[])
           break
         case 'awards':
-          setAwards(dataArray)
+          setAwards(dataArray as Award[])
           break
         case 'articles':
-          setArticles(dataArray)
+          setArticles(dataArray as Article[])
           break
       }
     } catch (error) {

@@ -85,25 +85,23 @@ const ToolsTable: React.FC<ToolsTableProps> = ({
 
   // 渲染标签
   const renderTags = (tags: string) => {
-    if (!tags || tags.trim() === '') return null
+    if (!tags) return null
     
-    // 将字符串按逗号分割成数组，并去除空白
-    const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
-    
-    if (tagArray.length === 0) return null
+    // 处理逗号分隔的字符串
+    const tagArray = tags.split(',')
     
     return (
-      <div className="flex flex-wrap gap-1 mt-1">
+      <div className="flex flex-wrap gap-1">
         {tagArray.slice(0, 3).map((tag, index) => (
           <span
             key={index}
-            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
           >
-            {tag}
+            {tag.trim()}
           </span>
         ))}
         {tagArray.length > 3 && (
-          <span className="text-xs text-gray-400">+{tagArray.length - 3}</span>
+          <span className="text-xs text-gray-500">+{tagArray.length - 3}</span>
         )}
       </div>
     )
@@ -197,8 +195,8 @@ const ToolsTable: React.FC<ToolsTableProps> = ({
                   
                   {/* 类型 */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(tool.type)}`}>
-                      {getTypeText(tool.type)}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(tool.type || '')}`}>
+                      {getTypeText(tool.type || '')}
                     </span>
                   </td>
                   
@@ -213,6 +211,11 @@ const ToolsTable: React.FC<ToolsTableProps> = ({
                       {tool.license && (
                         <div className="text-xs text-gray-500">
                           {tool.license}
+                        </div>
+                      )}
+                      {!tool.version && !tool.license && (
+                        <div className="text-xs text-gray-400">
+                          -
                         </div>
                       )}
                     </div>
@@ -238,26 +241,26 @@ const ToolsTable: React.FC<ToolsTableProps> = ({
                   
                   {/* 发布日期 */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(tool.releaseDate)}
+                    {tool.releaseDate ? formatDate(tool.releaseDate) : '-'}
                   </td>
                   
                   {/* 操作 */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       {renderLinkButton(
-                        tool.demoUrl,
+                        tool.demoUrl || '',
                         <ExternalLink className="h-4 w-4" />,
                         '查看演示',
                         'text-green-600 hover:text-green-900'
                       )}
                       {renderLinkButton(
-                        tool.githubUrl,
+                        tool.repository || '',
                         <Github className="h-4 w-4" />,
                         '查看源码',
                         'text-gray-600 hover:text-gray-900'
                       )}
                       {renderLinkButton(
-                        tool.downloadUrl,
+                        tool.downloadUrl || '',
                         <Download className="h-4 w-4" />,
                         '下载',
                         'text-blue-600 hover:text-blue-900'
@@ -291,7 +294,7 @@ const ToolsTable: React.FC<ToolsTableProps> = ({
           pagination={{
             currentPage: pagination.currentPage,
             pageSize: pagination.pageSize,
-            total: pagination.totalItems || 0,
+            total: (pagination as any).totalItems || pagination.totalPages * pagination.pageSize || 0,
             totalPages: pagination.totalPages
           }}
           onPageChange={onPageChange}

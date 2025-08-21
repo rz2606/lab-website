@@ -72,7 +72,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, position, email, company, hasPaper } = body
+    const { 
+      name, 
+      enrollmentDate, 
+      graduationDate, 
+      advisor, 
+      degree, 
+      discipline, 
+      thesisTitle, 
+      position, 
+      email, 
+      company, 
+      hasPaper, 
+      remarks 
+    } = body
     const currentUserId = getCurrentUserId(request)
 
     // 验证必填字段
@@ -83,13 +96,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 根据姓名+入学时间年份检查是否已存在
+    if (name && enrollmentDate) {
+      // 提取入学时间的年份
+      const enrollmentYear = new Date(enrollmentDate).getFullYear()
+      
+      // 查找相同姓名且入学时间在同一年的记录
+      const existingGraduates = await db.graduate.findMany({
+        where: {
+          name: name.trim(),
+          enrollmentDate: {
+            contains: enrollmentYear.toString()
+          }
+        }
+      })
+      
+      if (existingGraduates.length > 0) {
+        return NextResponse.json(
+          { error: `毕业生 "${name}" (${enrollmentYear}年入学) 已存在` },
+          { status: 400 }
+        )
+      }
+    }
+
     const graduate = await db.graduate.create({
       data: {
-        name,
-        position,
-        email,
-        company,
+        name: name?.trim(),
+        enrollmentDate,
+        graduationDate,
+        advisor: advisor?.trim(),
+        degree: degree?.trim(),
+        discipline: discipline?.trim(),
+        thesisTitle: thesisTitle?.trim(),
+        position: position?.trim(),
+        email: email?.trim(),
+        company: company?.trim(),
         hasPaper,
+        remarks: remarks?.trim(),
         createdBy: currentUserId,
         updatedBy: currentUserId
       }

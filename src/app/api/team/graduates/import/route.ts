@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const sheetName = formData.get('sheetName') as string
 
     if (!file) {
       return NextResponse.json(
@@ -33,8 +34,19 @@ export async function POST(request: NextRequest) {
     // 读取Excel文件
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'buffer' })
-    const sheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[sheetName]
+    
+    // 使用指定的工作表名称，如果没有指定则使用第一个工作表
+    const targetSheetName = sheetName || workbook.SheetNames[0]
+    
+    // 验证工作表是否存在
+    if (!workbook.SheetNames.includes(targetSheetName)) {
+      return NextResponse.json(
+        { error: `工作表 "${targetSheetName}" 不存在` },
+        { status: 400 }
+      )
+    }
+    
+    const worksheet = workbook.Sheets[targetSheetName]
     const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
     if (!jsonData || jsonData.length === 0) {
@@ -44,9 +56,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证Excel表头 - 将职位和公司设为可选字段
-    const requiredHeaders = ['序号', '姓名', '入学时间', '毕业时间', '指导老师', '学位', '学科', '论文题目', '是否有论文', '备注']
-    const optionalHeaders = ['职位', '公司'] // 可选字段
+    // 验证Excel表头 - 将职位、公司和是否有论文设为可选字段
+    const requiredHeaders = ['序号', '姓名', '入学时间', '毕业时间', '指导老师', '学位', '学科', '论文题目', '备注']
+    const optionalHeaders = ['职位', '公司', '是否有论文'] // 可选字段
     const firstRow = jsonData[0] as Record<string, unknown>
     const headers = Object.keys(firstRow)
     
@@ -175,23 +187,77 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 批量插入数据库
-    console.log('开始批量插入数据库...')
+    // 检查重复记录并插入数据库
+    console.log('开始检查重复记录并插入数据库...')
     console.log('准备插入的数据样本:', graduatesData.slice(0, 2)) // 显示前2条数据作为样本
     
-    const result = await db.graduate.createMany({
-      data: graduatesData
-      // 移除 skipDuplicates: true 以确保数据能够插入
-    })
-    console.log(`数据库插入完成: ${result.count} 条记录`)
-    console.log('插入结果详情:', result)
+    let insertedCount = 0
+    const duplicateRecords: Array<{name: string, enrollmentYear: string, row: number}> = []
+    
+    for (let i = 0; i < graduatesData.length; i++) {
+      const graduateData = graduatesData[i]
+      const { name, enrollmentDate } = graduateData
+      
+      try {
+        // 根据姓名+入学时间年份检查是否已存在
+        if (name && enrollmentDate) {
+          // 提取入学时间的年份
+          let enrollmentYear: string
+          try {
+            enrollmentYear = new Date(enrollmentDate).getFullYear().toString()
+          } catch {
+            // 如果日期解析失败，直接使用原始字符串中的年份
+            enrollmentYear = enrollmentDate.toString().substring(0, 4)
+          }
+          
+          // 查找相同姓名且入学时间在同一年的记录
+          const existingGraduates = await db.graduate.findMany({
+            where: {
+              name: name.trim(),
+              enrollmentDate: {
+                contains: enrollmentYear
+              }
+            }
+          })
+          
+          if (existingGraduates.length > 0) {
+            duplicateRecords.push({
+              name: name,
+              enrollmentYear: enrollmentYear,
+              row: i + 2 // Excel行号从2开始
+            })
+            console.log(`跳过重复记录: ${name} (${enrollmentYear}年入学)`)
+            continue
+          }
+        }
+        
+        // 插入新记录
+        await db.graduate.create({
+          data: graduateData
+        })
+        insertedCount++
+        
+      } catch (error) {
+        console.error(`插入第${i + 2}行数据失败:`, error)
+        errors.push(`第${i + 2}行: 插入失败 - ${error}`)
+      }
+    }
+    
+    console.log(`数据库插入完成: ${insertedCount} 条记录，跳过重复记录 ${duplicateRecords.length} 条`)
+    
+    // 构建返回消息
+    let message = `成功导入 ${insertedCount} 条毕业生记录`
+    if (duplicateRecords.length > 0) {
+      message += `，跳过重复记录 ${duplicateRecords.length} 条`
+    }
 
     return NextResponse.json({
       success: true,
-      message: `成功导入 ${result.count} 条毕业生记录`,
-      imported: result.count,
+      message,
+      imported: insertedCount,
       total: jsonData.length,
       processed: graduatesData.length,
+      duplicates: duplicateRecords.length > 0 ? duplicateRecords : undefined,
       errors: errors.length > 0 ? errors : undefined,
       skippedRows: skippedRows.length > 0 ? skippedRows : undefined
     })

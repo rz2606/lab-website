@@ -75,7 +75,41 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { name, description, url, category, image, reference, tags } = body
+    const {
+      name,
+      description,
+      shortDescription,
+      version,
+      type,
+      category,
+      tags,
+      authors,
+      maintainers,
+      license,
+      homepage,
+      repository,
+      documentation,
+      downloadUrl,
+      demoUrl,
+      url,
+      image,
+      screenshots,
+      features,
+      requirements,
+      installation,
+      usage,
+      changelog,
+      reference,
+      status,
+      visibility,
+      featured,
+      downloads,
+      stars,
+      forks,
+      issues,
+      releaseDate,
+      lastUpdate
+    } = body
     const currentUserId = getCurrentUserId(request)
 
     // 验证必填字段
@@ -90,8 +124,8 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description,
+        category: category || '',
         url,
-        category,
         image,
         reference,
         tags,

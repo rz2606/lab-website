@@ -8,7 +8,8 @@ import {
   Col,
   Form,
   Input,
-  Button
+  Button,
+  Select
 } from 'antd'
 import { 
   ToolOutlined, 
@@ -61,7 +62,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
     version: tool?.version || '1.0.0',
     type: tool?.type || 'software',
     category: tool?.category || '',
-    tags: tool?.tags || [],
+    tags: tool?.tags || '',
     authors: tool?.authors || [],
     maintainers: tool?.maintainers || [],
     license: tool?.license || 'MIT',
@@ -79,12 +80,12 @@ const ToolForm: React.FC<ToolFormProps> = ({
     status: tool?.status || 'active',
     visibility: tool?.visibility || 'public',
     featured: tool?.featured || false,
-    downloadCount: tool?.downloadCount || 0,
+    downloads: tool?.downloads || 0,
     starCount: tool?.starCount || 0,
     forkCount: tool?.forkCount || 0,
     issueCount: tool?.issueCount || 0,
-    releaseDate: tool?.releaseDate ? dayjs(tool.releaseDate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
-    lastUpdate: tool?.lastUpdate ? dayjs(tool.lastUpdate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
+    releaseDate: tool?.releaseDate && typeof tool.releaseDate === 'string' && tool.releaseDate.trim() ? dayjs(tool.releaseDate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+    lastUpdate: tool?.lastUpdate && typeof tool.lastUpdate === 'string' && tool.lastUpdate.trim() ? dayjs(tool.lastUpdate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
   }), [tool])
 
   useEffect(() => {
@@ -94,9 +95,10 @@ const ToolForm: React.FC<ToolFormProps> = ({
   // 添加标签
   const addTag = () => {
     if (tagInput.trim()) {
-      const currentTags = formData.tags || []
+      const currentTags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : []
       if (!currentTags.includes(tagInput.trim())) {
-        setFormData(prev => ({ ...prev, tags: [...currentTags, tagInput.trim()] }))
+        const newTags = [...currentTags, tagInput.trim()].join(',')
+        setFormData(prev => ({ ...prev, tags: newTags }))
         setTagInput('')
       }
     }
@@ -104,8 +106,9 @@ const ToolForm: React.FC<ToolFormProps> = ({
 
   // 删除标签
   const removeTag = (tagToRemove: string) => {
-    const currentTags = formData.tags || []
-    setFormData(prev => ({ ...prev, tags: currentTags.filter((tag: string) => tag !== tagToRemove) }))
+    const currentTags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : []
+    const newTags = currentTags.filter(tag => tag !== tagToRemove).join(',')
+    setFormData(prev => ({ ...prev, tags: newTags }))
   }
 
   // 添加作者
@@ -185,19 +188,17 @@ const ToolForm: React.FC<ToolFormProps> = ({
   const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       // 验证日期
-      if (values.lastUpdate && values.releaseDate && new Date(values.lastUpdate) < new Date(values.releaseDate)) {
-        message.error('最后更新时间不能早于发布时间')
-        return
+      if (values.lastUpdate && values.releaseDate) {
+        const releaseDate = new Date(values.releaseDate as string)
+        const lastUpdate = new Date(values.lastUpdate as string)
+        
+        if (lastUpdate < releaseDate) {
+          message.error('最后更新时间不能早于发布时间')
+          return
+        }
       }
 
-      const submitData = {
-        ...values,
-        id: tool?.id || Date.now().toString(),
-        createdAt: tool?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      await onSubmit(submitData)
+      await onSubmit(values)
       message.success(tool ? '工具更新成功' : '工具创建成功')
       onCancel()
     } catch (error) {
@@ -242,136 +243,191 @@ const ToolForm: React.FC<ToolFormProps> = ({
   }
 
   return (
-    <UnifiedForm
-      onSubmit={handleSubmit}
+    <Form
+      onFinish={handleSubmit}
       initialValues={initialValues}
-      validationRules={validationRules}
+      layout="vertical"
       className="max-w-4xl mx-auto"
     >
       {/* 基本信息 */}
       <Card title={<><ToolOutlined /> 基本信息</>} className="mb-6">
         <Row gutter={16}>
           <Col span={24}>
-            <UnifiedFormField
+            <Form.Item
               label="工具名称"
               name="name"
-              type="input"
-              placeholder="请输入工具名称"
-              prefix={<ToolOutlined />}
-            />
+              rules={[
+                { required: true, message: '请输入工具名称' },
+                { min: 2, message: '工具名称至少2个字符' }
+              ]}
+            >
+              <Input placeholder="请输入工具名称" prefix={<ToolOutlined />} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col span={24}>
-            <UnifiedFormField
+            <Form.Item
               label="简短描述"
               name="shortDescription"
-              type="textarea"
-              placeholder="请输入简短描述（不超过200字符）"
-              rows={3}
-              showCount
-              maxLength={200}
-            />
+              rules={[
+                { required: true, message: '请输入简短描述' },
+                { max: 200, message: '简短描述不能超过200个字符' }
+              ]}
+            >
+              <Input.TextArea 
+                placeholder="请输入简短描述（不超过200字符）" 
+                rows={3} 
+                showCount 
+                maxLength={200} 
+              />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={8}>
-            <UnifiedFormField
+            <Form.Item
               label="类型"
               name="type"
-              type="select"
-              placeholder="请选择类型"
-              options={[
-                { value: 'software', label: '软件工具' },
-                { value: 'dataset', label: '数据集' },
-                { value: 'model', label: '模型' },
-                { value: 'library', label: '库' },
-                { value: 'framework', label: '框架' },
-                { value: 'api', label: 'API' }
-              ]}
-            />
+              rules={[{ required: true, message: '请选择类型' }]}
+            >
+              <Select placeholder="请选择类型">
+                <Select.Option value="software">软件工具</Select.Option>
+                <Select.Option value="library">程序库</Select.Option>
+                <Select.Option value="framework">框架</Select.Option>
+                <Select.Option value="database">数据库</Select.Option>
+                <Select.Option value="api">API接口</Select.Option>
+                <Select.Option value="service">在线服务</Select.Option>
+                <Select.Option value="plugin">插件</Select.Option>
+                <Select.Option value="extension">扩展</Select.Option>
+              </Select>
+            </Form.Item>
           </Col>
           <Col xs={24} md={8}>
-            <UnifiedFormField
+            <Form.Item
               label="版本号"
               name="version"
-              type="input"
-              placeholder="如：1.0.0"
-              prefix={<TagOutlined />}
-            />
+              rules={[
+                { required: true, message: '请输入版本号' },
+                { pattern: /^\d+\.\d+\.\d+/, message: '版本号格式不正确（如：1.0.0）' }
+              ]}
+            >
+              <Input placeholder="如：1.0.0" prefix={<TagOutlined />} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={8}>
-            <UnifiedFormField
+            <Form.Item
               label="状态"
               name="status"
-              type="select"
-              placeholder="请选择状态"
-              options={[
-                { value: 'active', label: '活跃' },
-                { value: 'maintenance', label: '维护中' },
-                { value: 'deprecated', label: '已弃用' },
-                { value: 'beta', label: '测试版' },
-                { value: 'alpha', label: '内测版' }
-              ]}
-            />
+              rules={[{ required: true, message: '请选择状态' }]}
+            >
+              <Select placeholder="请选择状态">
+                <Select.Option value="active">活跃</Select.Option>
+                <Select.Option value="inactive">不活跃</Select.Option>
+                <Select.Option value="deprecated">已弃用</Select.Option>
+                <Select.Option value="beta">测试版</Select.Option>
+                <Select.Option value="alpha">内测版</Select.Option>
+                <Select.Option value="stable">稳定版</Select.Option>
+                <Select.Option value="maintenance">维护中</Select.Option>
+              </Select>
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="分类"
               name="category"
-              type="input"
-              placeholder="如：机器学习、数据分析"
-              prefix={<AppstoreOutlined />}
-            />
+            >
+              <Input placeholder="如：机器学习、数据分析" prefix={<AppstoreOutlined />} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="许可证"
               name="license"
-              type="input"
-              placeholder="如：MIT、Apache-2.0"
-              prefix={<FileTextOutlined />}
-            />
+            >
+              <Input placeholder="如：MIT、Apache-2.0" prefix={<FileTextOutlined />} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="可见性"
               name="visibility"
-              type="select"
-              placeholder="请选择可见性"
-              options={[
-                { value: 'public', label: '公开' },
-                { value: 'internal', label: '内部' },
-                { value: 'private', label: '私有' }
-              ]}
-            />
+              rules={[{ required: true, message: '请选择可见性' }]}
+            >
+              <Select placeholder="请选择可见性">
+                <Select.Option value="public">公开</Select.Option>
+                <Select.Option value="private">私有</Select.Option>
+                <Select.Option value="internal">内部</Select.Option>
+              </Select>
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="特色工具"
               name="featured"
-              type="checkbox"
-              checkboxLabel={<><StarOutlined /> 设为特色工具</>}
-            />
+              valuePropName="checked"
+            >
+              <Input type="checkbox" />
+            </Form.Item>
           </Col>
         </Row>
 
         {/* 标签管理 */}
         <Form.Item label="标签">
+          {/* 预设标签选择 */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 8, fontSize: '14px', color: '#666' }}>常用标签：</div>
+            <Space wrap>
+              {[
+                '蛋白质结构', '结构比对', '相似性分析', '生物信息学',
+                'Python', '分子筛选', '负向设计', '数据库构建',
+                '分子数据库', '化学信息', '数据管理', '检索分析',
+                '人工智能', '药物活性', '预测模型', '机器学习'
+              ].map((presetTag) => {
+                const isSelected = formData.tags && formData.tags.split(',').map(t => t.trim()).includes(presetTag)
+                return (
+                  <Tag
+                    key={presetTag}
+                    color={isSelected ? 'blue' : 'default'}
+                    style={{ 
+                      cursor: 'pointer',
+                      marginBottom: 4,
+                      border: isSelected ? '1px solid #1890ff' : '1px solid #d9d9d9'
+                    }}
+                    onClick={() => {
+                      if (isSelected) {
+                        removeTag(presetTag)
+                      } else {
+                        const currentTags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : []
+                        if (!currentTags.includes(presetTag)) {
+                          const newTags = [...currentTags, presetTag].join(',')
+                          setFormData(prev => ({ ...prev, tags: newTags }))
+                        }
+                      }
+                    }}
+                  >
+                    {presetTag}
+                  </Tag>
+                )
+              })}
+            </Space>
+          </div>
+          
+          {/* 自定义标签输入 */}
           <Space.Compact style={{ display: 'flex' }}>
             <Input
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onPressEnter={addTag}
-              placeholder="输入标签并按回车添加"
+              placeholder="输入自定义标签并按回车添加"
             />
             <Button 
               type="primary" 
@@ -381,17 +437,20 @@ const ToolForm: React.FC<ToolFormProps> = ({
               添加
             </Button>
           </Space.Compact>
+          
+          {/* 已选标签显示 */}
           <div style={{ marginTop: 8 }}>
-            {(formData.tags || []).map((tag: string, index: number) => (
+            {formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag).map((tag: string, index: number) => (
               <Tag
                 key={index}
                 closable
                 onClose={() => removeTag(tag)}
+                color="processing"
                 style={{ marginBottom: 4 }}
               >
                 {tag}
               </Tag>
-            ))}
+            )) : null}
           </div>
         </Form.Item>
       </Card>
@@ -467,109 +526,107 @@ const ToolForm: React.FC<ToolFormProps> = ({
       <Card title={<><LinkOutlined /> 链接信息</>} className="mb-6">
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="主页"
               name="homepage"
-              type="input"
-              placeholder="https://example.com"
-              prefix={<LinkOutlined />}
-            />
+              rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            >
+              <Input placeholder="https://example.com" prefix={<LinkOutlined />} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="代码仓库"
               name="repository"
-              type="input"
-              placeholder="https://github.com/user/repo"
-              prefix={<GithubOutlined />}
-            />
+              rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            >
+              <Input placeholder="https://github.com/user/repo" prefix={<GithubOutlined />} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="文档"
               name="documentation"
-              type="input"
-              placeholder="https://docs.example.com"
-              prefix={<FileTextOutlined />}
-            />
+              rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            >
+              <Input placeholder="https://docs.example.com" prefix={<FileTextOutlined />} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="下载链接"
               name="downloadUrl"
-              type="input"
-              placeholder="https://download.example.com"
-              prefix={<DownloadOutlined />}
-            />
+              rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            >
+              <Input placeholder="https://download.example.com" prefix={<DownloadOutlined />} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="演示链接"
               name="demoUrl"
-              type="input"
-              placeholder="https://demo.example.com"
-              prefix={<LinkOutlined />}
-            />
+              rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            >
+              <Input placeholder="https://demo.example.com" prefix={<LinkOutlined />} />
+            </Form.Item>
           </Col>
         </Row>
       </Card>
 
       {/* 详细信息 */}
       <Card title={<><FileTextOutlined /> 详细信息</>} className="mb-6">
-        <UnifiedFormField
+        <Form.Item
           label="详细描述"
           name="description"
-          type="textarea"
-          placeholder="请输入详细描述"
-          rows={6}
-          showCount
-        />
+          rules={[
+            { required: true, message: '请输入详细描述' },
+            { min: 10, message: '详细描述至少10个字符' }
+          ]}
+        >
+          <Input.TextArea placeholder="请输入详细描述" rows={6} showCount />
+        </Form.Item>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="系统要求"
               name="requirements"
-              type="textarea"
-              placeholder="请输入系统要求"
-              rows={4}
-            />
+            >
+              <Input.TextArea placeholder="请输入系统要求" rows={4} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="安装说明"
               name="installation"
-              type="textarea"
-              placeholder="请输入安装说明"
-              rows={4}
-            />
+            >
+              <Input.TextArea placeholder="请输入安装说明" rows={4} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="使用说明"
               name="usage"
-              type="textarea"
-              placeholder="请输入使用说明"
-              rows={4}
-            />
+            >
+              <Input.TextArea placeholder="请输入使用说明" rows={4} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="更新日志"
               name="changelog"
-              type="textarea"
-              placeholder="请输入更新日志"
-              rows={4}
-            />
+            >
+              <Input.TextArea placeholder="请输入更新日志" rows={4} />
+            </Form.Item>
           </Col>
         </Row>
 
@@ -642,53 +699,57 @@ const ToolForm: React.FC<ToolFormProps> = ({
       <Card title={<><BarChartOutlined /> 统计信息</>} className="mb-6">
         <Row gutter={16}>
           <Col xs={24} md={6}>
-            <UnifiedFormField
+            <Form.Item
               label="下载次数"
-              name="downloadCount"
-              type="number"
-              min={0}
-            />
+              name="downloads"
+            >
+              <Input type="number" min={0} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={6}>
-            <UnifiedFormField
+            <Form.Item
               label="星标数"
-              name="starCount"
-              type="number"
-              min={0}
-            />
+              name="stars"
+            >
+              <Input type="number" min={0} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={6}>
-            <UnifiedFormField
+            <Form.Item
               label="分支数"
-              name="forkCount"
-              type="number"
-              min={0}
-            />
+              name="forks"
+            >
+              <Input type="number" min={0} />
+            </Form.Item>
           </Col>
           <Col xs={24} md={6}>
-            <UnifiedFormField
+            <Form.Item
               label="问题数"
-              name="issueCount"
-              type="number"
-              min={0}
-            />
+              name="issues"
+            >
+              <Input type="number" min={0} />
+            </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="发布日期"
               name="releaseDate"
-              type="date"
-            />
+              rules={[{ required: true, message: '请选择发布日期' }]}
+            >
+              <Input type="date" />
+            </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <UnifiedFormField
+            <Form.Item
               label="最后更新"
               name="lastUpdate"
-              type="date"
-            />
+              rules={[{ required: true, message: '请选择最后更新日期' }]}
+            >
+              <Input type="date" />
+            </Form.Item>
           </Col>
         </Row>
       </Card>
@@ -711,7 +772,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
           </Button>
         </Space>
       </Form.Item>
-    </UnifiedForm>
+    </Form>
   )
 }
 

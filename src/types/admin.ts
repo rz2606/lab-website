@@ -32,11 +32,42 @@ export interface Tool {
   url?: string
   image?: string
   reference?: string
-  tags?: string
+  tags: string
   createdAt: string
   updatedAt: string
   createdBy?: number
   updatedBy?: number
+  // 扩展字段以匹配Prisma schema
+  shortDescription?: string
+  version?: string
+  type?: string
+  authors?: string[]
+  maintainers?: string[]
+  license?: string
+  homepage?: string
+  repository?: string
+  documentation?: string
+  downloadUrl?: string
+  demoUrl?: string
+  screenshots?: string[]
+  features?: string[]
+  requirements?: string
+  installation?: string
+  usage?: string
+  changelog?: string
+  status?: string
+  visibility?: string
+  featured?: boolean
+  downloads?: number
+  stars?: number
+  forks?: number
+  issues?: number
+  releaseDate?: string
+  lastUpdate?: string
+  githubUrl?: string
+  starCount?: number
+  forkCount?: number
+  issueCount?: number
 }
 
 export interface News {
@@ -81,7 +112,7 @@ export interface TeamMember {
   remarks?: string
 }
 
-// 获奖名单接口
+// 获奖者接口（保持向后兼容）
 export interface AwardWinner {
   id: number
   serialNumber?: string
@@ -94,6 +125,56 @@ export interface AwardWinner {
   updatedAt?: string
   createdBy?: number
   updatedBy?: number
+}
+
+// 获奖接口（匹配数据库结构）
+export interface Award {
+  id: number
+  serialNumber?: string
+  awardee: string // 获奖人员
+  awardDate?: string // 获奖时间
+  awardName: string // 获奖名称及等级
+  advisor?: string // 指导老师
+  remarks?: string // 备注
+  createdAt?: string
+  updatedAt?: string
+  createdBy?: number
+  updatedBy?: number
+  creator?: {
+    id: number
+    username: string
+  }
+  updater?: {
+    id: number
+    username: string
+  }
+  // 扩展字段（用于前端组件兼容）
+  name?: string
+  description?: string
+  type?: string
+  level?: string
+  rank?: string
+  organization?: string
+  organizer?: string
+  winners?: string[]
+  winnerIds?: number[]
+  certificateUrl?: string
+  newsUrl?: string
+  externalUrl?: string
+  images?: string[]
+  tags?: string[]
+  category?: string
+  prizeAmount?: number
+  currency?: string
+  criteria?: string
+  significance?: string
+  impact?: string
+  relatedProjects?: string[]
+  relatedPublications?: string[]
+  status?: string
+  visibility?: string
+  featured?: boolean
+  notes?: string
 }
 
 // 文章接口

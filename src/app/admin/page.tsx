@@ -7,7 +7,7 @@ import { clearAuth, isAuthenticated, getCurrentUser, isAdmin } from '@/lib/auth'
 // 导入布局组件
 import AdminLayout from '@/components/admin/layout/AdminLayout'
 import UsersTab from '@/components/admin/tabs/UsersTab'
-import TeamTab from '@/components/admin/tabs/TeamTab'
+import TeamManagementTab from '@/components/admin/team/TeamManagementTab'
 import PublicationsTab from '@/components/admin/tabs/PublicationsTab'
 import ToolsTab from '@/components/admin/tabs/ToolsTab'
 import NewsTab from '@/components/admin/tabs/NewsTab'
@@ -102,7 +102,17 @@ function AdminPage() {
       const user = getCurrentUser()
       const adminAccess = isAdmin()
 
-      setCurrentUser(user)
+      // 将UserInfo的roleType映射为role
+      if (user) {
+        setCurrentUser({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.roleType
+        })
+      } else {
+        setCurrentUser(null)
+      }
       setHasAdminAccess(adminAccess)
       setAuthChecked(true)
 
@@ -140,7 +150,7 @@ function AdminPage() {
       case 'users':
         return <UsersTab />
       case 'team':
-        return <TeamTab />
+          return <TeamManagementTab />
       case 'publications':
         return <PublicationsTab />
       case 'tools':
@@ -194,9 +204,7 @@ function AdminPage() {
     <ErrorBoundary>
       <AdminLayout
         activeTab={activeTab}
-        onTabChange={handleTabChange}
-        currentUser={currentUser}
-        onLogout={handleLogout}
+        onTabChange={setActiveTab}
       >
         {renderTabContent()}
       </AdminLayout>

@@ -1,54 +1,46 @@
 {
-  "pi": {
-    "id": 4,
-    "name": "张教授",
-    "photo": "/uploads/pi-avatar.jpg",
-    "title": "教授，博士生导师",
-    "email": "zhang@university.edu.cn",
-    "experience": "2015-至今：某大学计算机学院教授\n2010-2015：某研究所副研究员\n2008-2010：博士后研究员",
-    "positions": "中国计算机学会生物信息学专委会委员\n国际药物信息学会会员\n《生物信息学》期刊编委",
-    "awards": "2023年：国家自然科学基金优秀青年基金\n2021年：省科技进步二等奖\n2019年：青年科学家奖",
-    "papers": "Nature Computational Science (2025)\nBriefings in Bioinformatics (2021)\nJournal of Chemical Information and Modeling (2020)",
-    "createdAt": "2025-08-21T06:14:37.864Z",
-    "updatedAt": "2025-08-21T06:29:13.257Z",
-    "createdBy": null,
-    "updatedBy": null
-  },
-  "researchers": [
+  "data": [
     {
-      "id": 38,
-      "name": "张小明",
-      "photo": "/uploads/researcher5.jpg",
-      "email": "zhangxiaoming@university.edu.cn",
-      "direction": "蛋白质结构预测",
-      "type": "researcher",
-      "createdAt": "2025-08-21T06:14:37.866Z",
-      "updatedAt": "2025-08-21T06:14:37.866Z",
-      "createdBy": null,
-      "updatedBy": null
+      "id": 10,
+      "title": "Quantum Machine Learning for Molecular Simulation",
+      "authors": "Liu Xiaoming, Yang Ting",
+      "journal": "Nature Computational Science",
+      "volume": null,
+      "issue": null,
+      "pages": null,
+      "publishedDate": "2023-11-05T00:00:00.000Z",
+      "doi": "10.1038/s43588-023-00512-8",
+      "pmid": null,
+      "abstract": "We explore the application of quantum machine learning algorithms to molecular simulation problems. Our quantum-enhanced variational algorithm demonstrates exponential speedup for certain molecular property calculations compared to classical methods. This work opens new avenues for quantum advantage in computational chemistry.",
+      "keywords": "quantum machine learning,molecular simulation,quantum computing,variational algorithms",
+      "impactFactor": 12.345,
+      "citationCount": 67,
+      "url": null,
+      "pdfUrl": null,
+      "category": "Quantum Computing",
+      "isOpenAccess": false,
+      "language": "en",
+      "status": "published",
+      "createdAt": "2025-08-21T06:14:37.877Z",
+      "updatedAt": "2025-08-21T06:14:37.877Z",
+      "createdBy": 23,
+      "updatedBy": 23,
+      "creator": {
+        "id": 23,
+        "username": "user"
+      },
+      "updater": {
+        "id": 23,
+        "username": "user"
+      }
     }
   ],
-  "graduates": [
-    {
-      "id": 864,
-      "serialNumber": null,
-      "name": "吴敏",
-      "enrollmentDate": null,
-      "graduationDate": null,
-      "advisor": null,
-      "degree": null,
-      "discipline": null,
-      "thesisTitle": null,
-      "remarks": null,
-      "hasPaper": null,
-      "position": "药物化学家",
-      "email": "wu.min@novartis.com",
-      "company": "诺华制药",
-      "graduationYear": 2019,
-      "createdAt": "2025-08-21T06:14:37.881Z",
-      "updatedAt": "2025-08-21T06:14:37.881Z",
-      "createdBy": null,
-      "updatedBy": null
-    }
-  ]
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 5,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false
+  }
 }

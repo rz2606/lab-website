@@ -21,7 +21,7 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
   articles = [],
   loading = false,
   error = null,
-  pagination = { currentPage: 1, totalPages: 1, pageSize: 10, totalItems: 0 },
+  pagination = { currentPage: 1, totalPages: 1, pageSize: 10, total: 0 },
   onEdit,
   onDelete,
   onPageChange,
@@ -219,30 +219,34 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
                           {truncateText(article.title, 40)}
                         </div>
                       </div>
-                      {article.summary && (
-                        <div className="text-xs text-gray-500 mb-1" title={article.summary}>
-                          {truncateText(article.summary, 100)}
+                      {article.abstract && (
+                        <div className="text-xs text-gray-500 mb-1" title={article.abstract}>
+                          {truncateText(article.abstract, 100)}
                         </div>
                       )}
-                      {renderTags(article.tags)}
-                      {article.featuredImage && (
-                        <div className="mt-2">
-                          <Image
-                            src={article.featuredImage}
-                            alt={article.title}
-                            width={80}
-                            height={48}
-                            className="h-12 w-20 object-cover rounded border"
-                          />
+                      {article.keywords && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {article.keywords.split(',').slice(0, 2).map((keyword, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                            >
+                              {keyword.trim()}
+                            </span>
+                          ))}
+                          {article.keywords.split(',').length > 2 && (
+                            <span className="text-xs text-gray-400">+{article.keywords.split(',').length - 2}</span>
+                          )}
                         </div>
                       )}
+
                     </div>
                   </td>
                   
                   {/* 类型 */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(article.type)}`}>
-                      {getTypeText(article.type)}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      期刊论文
                     </span>
                   </td>
                   
@@ -250,32 +254,32 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="h-4 w-4 text-gray-400 mr-2" />
-                      <div className="text-sm text-gray-900" title={article.authors?.join(', ')}>
-                        {renderAuthors(article.authors)}
+                      <div className="text-sm text-gray-900" title={article.authors}>
+                        {article.authors}
                       </div>
                     </div>
                   </td>
                   
                   {/* 状态 */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(article.status)}`}>
-                      {getStatusText(article.status)}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      已发布
                     </span>
                   </td>
                   
                   {/* 统计 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500 space-y-1">
-                      {article.views !== undefined && (
+                      {article.citationCount !== undefined && (
                         <div className="flex items-center">
                           <Eye className="h-3 w-3 mr-1" />
-                          <span>{article.views.toLocaleString()}</span>
+                          <span>引用: {article.citationCount}</span>
                         </div>
                       )}
-                      {article.readingTime && (
+                      {article.impactFactor && (
                         <div className="flex items-center">
                           <Clock className="h-3 w-3 mr-1" />
-                          <span>{formatReadingTime(article.readingTime)}</span>
+                          <span>IF: {article.impactFactor}</span>
                         </div>
                       )}
                     </div>
@@ -285,20 +289,20 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(article.publishDate)}
+                      {formatDate(article.publishedDate)}
                     </div>
                   </td>
                   
                   {/* 操作 */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {article.url && (
+                      {article.doi && (
                         <a
-                          href={article.url}
+                          href={`https://doi.org/${article.doi}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
-                          title="查看文章"
+                          title="查看DOI链接"
                         >
                           <ExternalLink className="h-4 w-4" />
                         </a>
@@ -332,11 +336,11 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
           currentPage={pagination.currentPage}
           totalPages={pagination.totalPages}
           pageSize={pagination.pageSize}
-          totalItems={pagination.totalItems}
+          totalItems={pagination.total}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
-          showQuickJumper
-          showSizeChanger
+          showQuickJumper={true}
+          showSizeChanger={true}
         />
       )}
     </div>
