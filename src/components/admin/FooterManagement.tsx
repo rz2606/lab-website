@@ -119,6 +119,7 @@ const FooterManagement: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData,
+          ...(footerConfig && { id: footerConfig.id }),
           links: formData.links
         })
       })
