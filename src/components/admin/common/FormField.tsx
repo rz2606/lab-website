@@ -592,7 +592,7 @@ SelectField.displayName = 'SelectField'
 interface UnifiedFormFieldProps extends BaseFieldProps {
   type: 'text' | 'email' | 'url' | 'tel' | 'search' | 'password' | 'number' | 'textarea' | 'select'
   value?: string | number
-  onChange?: (value: string | number) => void
+  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
   placeholder?: string
   options?: Array<{ value: string | number; label: string; disabled?: boolean }>
   leftIcon?: React.ReactNode
@@ -619,9 +619,9 @@ const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelect
   },
   ref
 ) => {
-  // 处理onChange事件，统一返回值类型
+  // 处理onChange事件，传递完整的事件对象
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    onChange?.(e.target.value)
+    onChange?.(e)
   }
 
   // 设置leftIcon，优先使用传入的icon

@@ -3,7 +3,7 @@ import "./globals.css";
 import "@/styles/modal.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App } from 'antd';
 import theme from '@/config/antd-theme';
 import zhCN from 'antd/locale/zh_CN';
 
@@ -23,11 +23,13 @@ export default function RootLayout({
         className="antialiased min-h-screen flex flex-col font-sans"
       >
         <ConfigProvider theme={theme} locale={zhCN}>
-          <Navigation />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          <App>
+            <Navigation />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </App>
         </ConfigProvider>
       </body>
     </html>

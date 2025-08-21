@@ -5,7 +5,8 @@ import {
   Tag,
   message,
   Row,
-  Col
+  Col,
+  Card
 } from 'antd'
 import {
   FileText,
@@ -22,8 +23,8 @@ import {
 import Image from 'next/image'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/admin'
-import { UnifiedForm } from '../../common/UnifiedForm'
-import { UnifiedFormField } from '../../common/UnifiedFormField'
+import UnifiedForm from '../../common/UnifiedForm'
+import UnifiedFormField from '../../common/UnifiedFormField'
 
 interface ArticleFormProps {
   article?: Article | null
@@ -265,7 +266,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       allowComments: values.allowComments as boolean,
       viewCount: values.viewCount as number,
       readingTime: values.readingTime as number,
-      publishDate: values.publishDate ? (values.publishDate as any).toISOString() : undefined,
+      publishDate: values.publishDate ? (values.publishDate as Date).toISOString() : undefined,
       lastModified: new Date().toISOString(),
       seoTitle: values.seoTitle?.toString().trim() || undefined,
       seoDescription: values.seoDescription?.toString().trim() || undefined,

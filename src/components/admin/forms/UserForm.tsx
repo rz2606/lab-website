@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { User, Mail, Phone, Shield, Lock } from 'lucide-react'
+import { User, Mail, Phone, Shield, Lock, Camera } from 'lucide-react'
 import type { User as UserType } from '@/types/admin'
 import { useFormValidation } from '@/hooks/useFormValidation'
 import FormField from '../common/FormField'
+import FileUpload from '@/components/FileUpload'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '../common/LoadingSpinner'
 
@@ -23,9 +24,11 @@ const UserForm: React.FC<UserFormProps> = ({
   const { success: showSuccess, error: showError } = useToast()
 
   const initialData = {
+    username: '',
     name: '',
     email: '',
     phone: '',
+    avatar: '',
     role: 'user' as 'admin' | 'user',
     status: 'active' as 'active' | 'inactive',
     password: '',
@@ -33,6 +36,10 @@ const UserForm: React.FC<UserFormProps> = ({
   }
 
   const validationRules = {
+    username: {
+      required: true,
+      minLength: 3
+    },
     name: {
       required: true,
       minLength: 2
@@ -64,21 +71,23 @@ const UserForm: React.FC<UserFormProps> = ({
   useEffect(() => {
     if (user) {
       const userData = {
+        username: user.username || '',
         name: user.name || '',
         email: user.email || '',
         phone: user.phone || '',
-        role: user.role || 'user',
-        status: user.status || 'active',
+        avatar: user.avatar || '',
+        role: user.roleType === 'admin' ? 'admin' : 'user',
+        status: user.isActive ? 'active' : 'inactive',
         password: '',
         confirmPassword: ''
       }
-      Object.keys(userData).forEach(key => {
-        setFieldValue(key, userData[key as keyof typeof userData])
-      })
+      // 使用resetForm来设置新的初始值，避免依赖循环
+      resetForm(userData)
     } else {
+      // 重置为初始数据
       resetForm()
     }
-  }, [user, setFieldValue, resetForm])
+  }, [user, resetForm])
 
   // 自定义验证函数
   const validatePasswords = (): boolean => {
@@ -118,9 +127,11 @@ const UserForm: React.FC<UserFormProps> = ({
     setIsSubmitting(true)
     try {
       const submitData: Partial<UserType> = {
+        username: formData.username,
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim() || undefined,
+        avatar: formData.avatar,
         role: formData.role,
         status: formData.status
       }
@@ -159,6 +170,19 @@ const UserForm: React.FC<UserFormProps> = ({
           </h3>
           
           <div className="form-grid">
+            {/* 用户名 */}
+            <FormField
+              label="用户名"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              error={errors.username}
+              placeholder="请输入用户名"
+              required
+              disabled={loading || isSubmitting}
+              leftIcon={<User className="h-4 w-4" />}
+            />
+
             {/* 姓名 */}
             <FormField
               label="姓名"
@@ -169,7 +193,7 @@ const UserForm: React.FC<UserFormProps> = ({
               placeholder="请输入姓名"
               required
               disabled={loading || isSubmitting}
-              leftIcon={User}
+              leftIcon={<User className="h-4 w-4" />}
             />
 
             {/* 邮箱 */}
@@ -183,7 +207,7 @@ const UserForm: React.FC<UserFormProps> = ({
               placeholder="请输入邮箱地址"
               required
               disabled={loading || isSubmitting}
-              leftIcon={Mail}
+              leftIcon={<Mail className="h-4 w-4" />}
             />
           </div>
           
@@ -198,7 +222,22 @@ const UserForm: React.FC<UserFormProps> = ({
               error={errors.phone}
               placeholder="请输入手机号码"
               disabled={loading || isSubmitting}
-              leftIcon={Phone}
+              leftIcon={<Phone className="h-4 w-4" />}
+            />
+          </div>
+          
+          {/* 头像上传 */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              头像
+            </label>
+            <FileUpload
+              accept="image/*"
+              maxSize={5}
+              onChange={(url) => setFieldValue('avatar', url)}
+              value={formData.avatar}
+              placeholder="上传用户头像"
             />
           </div>
         </div>
@@ -219,7 +258,7 @@ const UserForm: React.FC<UserFormProps> = ({
               value={formData.role}
               onChange={handleInputChange}
               disabled={loading || isSubmitting}
-              leftIcon={Shield}
+              leftIcon={<Shield className="h-4 w-4" />}
               options={[
                 { value: 'user', label: '普通用户' },
                 { value: 'admin', label: '管理员' }
@@ -234,7 +273,7 @@ const UserForm: React.FC<UserFormProps> = ({
               value={formData.status}
               onChange={handleInputChange}
               disabled={loading || isSubmitting}
-              leftIcon={Shield}
+              leftIcon={<Shield className="h-4 w-4" />}
               options={[
                 { value: 'active', label: '激活' },
                 { value: 'inactive', label: '禁用' }
@@ -262,7 +301,7 @@ const UserForm: React.FC<UserFormProps> = ({
               placeholder={isEditing ? '留空则不修改密码' : '请输入密码'}
               required={!isEditing}
               disabled={loading || isSubmitting}
-              leftIcon={Lock}
+              leftIcon={<Lock className="h-4 w-4" />}
             />
 
             {/* 确认密码 */}
@@ -276,7 +315,7 @@ const UserForm: React.FC<UserFormProps> = ({
               placeholder="请再次输入密码"
               required={!isEditing}
               disabled={loading || isSubmitting}
-              leftIcon={Lock}
+              leftIcon={<Lock className="h-4 w-4" />}
             />
           </div>
         </div>

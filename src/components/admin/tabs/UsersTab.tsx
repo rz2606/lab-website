@@ -145,7 +145,7 @@ const UsersTab: React.FC<UsersTabProps> = ({ className = '' }) => {
     setIsSubmitting(true)
     try {
       if (editingUser) {
-        await updateUser(editingUser.id, userData)
+        await updateUser(userData, editingUser.id)
       } else {
         await createUser(userData)
       }

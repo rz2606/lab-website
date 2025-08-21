@@ -10,8 +10,8 @@ import type
 
 
 { Award as AwardType } from '@/types/admin'
-import { UnifiedForm } from '../../common/UnifiedForm'
-import { UnifiedFormField } from '../../common/UnifiedFormField'
+import UnifiedForm from '../../common/UnifiedForm'
+import UnifiedFormField from '../../common/UnifiedFormField'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { 
   Award, 
@@ -228,7 +228,7 @@ const AwardForm: React.FC<AwardFormProps> = ({
   }
 
   // 处理表单提交
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     const submitData: Partial<AwardType> = {
       name: values.name?.trim(),
       description: values.description?.trim(),

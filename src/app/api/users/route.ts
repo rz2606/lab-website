@@ -92,10 +92,25 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { username, email, password, roleType = 'user', name } = body
+    const { 
+      name, 
+      username, 
+      email, 
+      password, 
+      role = 'user', 
+      roleType, 
+      status = 'active', 
+      isActive,
+      phone 
+    } = body
+
+    // 支持前端字段格式：name作为username，role作为roleType，status作为isActive
+    const finalUsername = username || name
+    const finalRoleType = roleType || role
+    const finalIsActive = isActive !== undefined ? isActive : (status === 'active')
 
     // 验证必填字段
-    if (!username || !email || !password) {
+    if (!finalUsername || !email || !password) {
       return NextResponse.json(
         { error: '用户名、邮箱和密码为必填项' },
         { status: 400 }
@@ -106,7 +121,7 @@ export async function POST(request: NextRequest) {
     const existingUser = await db.user.findFirst({
       where: {
         OR: [
-          { username },
+          { username: finalUsername },
           { email }
         ]
       }
@@ -125,11 +140,12 @@ export async function POST(request: NextRequest) {
     // 创建用户
     const user = await db.user.create({
       data: {
-        username,
+        username: finalUsername,
         email,
         password: hashedPassword,
-        roleType,
-        name
+        roleType: finalRoleType,
+        name: name || finalUsername,
+        isActive: finalIsActive
       },
       select: {
         id: true,

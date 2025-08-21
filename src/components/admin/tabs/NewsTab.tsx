@@ -176,7 +176,7 @@ const NewsTab: React.FC<NewsTabProps> = ({ className = '' }) => {
     setIsSubmitting(true)
     try {
       if (editingNews) {
-        await updateNews(editingNews.id, newsData)
+        await updateNews(newsData, editingNews.id)
       } else {
         await createNews(newsData)
       }

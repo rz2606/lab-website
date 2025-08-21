@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     
     // 构建排序条件 - 保持置顶新闻优先
     const orderBy = sortBy === 'createdAt' ? [
-      { isPinned: 'desc' as const },
-      { createdAt: sortOrder as const }
+      { isPinned: 'desc' as 'asc' | 'desc' },
+      { createdAt: sortOrder as 'asc' | 'desc' }
     ] : [
-      { isPinned: 'desc' as const },
-      { [sortBy]: sortOrder }
+      { isPinned: 'desc' as 'asc' | 'desc' },
+      { [sortBy]: sortOrder as 'asc' | 'desc' }
     ]
     
     // 获取总数
@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
     const createData: Record<string, unknown> = {
       title,
       content,
-      summary,
-      image,
+      summary: summary || '',
+      image: image || '',
       isPinned: isPinned || false
     }
     

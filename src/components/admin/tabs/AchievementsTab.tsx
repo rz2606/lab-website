@@ -264,7 +264,7 @@ const AchievementsTab: React.FC<AchievementsTabProps> = ({ className = '' }) => 
     setIsSubmitting(true)
     try {
       if (editingArticle) {
-        await updateArticle(editingArticle.id, articleData)
+        await updateArticle(articleData, editingArticle.id)
       } else {
         await createArticle(articleData)
       }
@@ -323,7 +323,7 @@ const AchievementsTab: React.FC<AchievementsTabProps> = ({ className = '' }) => 
     setIsSubmitting(true)
     try {
       if (editingAward) {
-        await updateAward(editingAward.id, awardData)
+        await updateAward(awardData, editingAward.id)
       } else {
         await createAward(awardData)
       }

@@ -153,7 +153,7 @@ const PublicationsTab: React.FC<PublicationsTabProps> = ({ className = '' }) => 
     setIsSubmitting(true)
     try {
       if (editingPublication) {
-        await updatePublication(editingPublication.id, publicationData)
+        await updatePublication(publicationData, editingPublication.id)
       } else {
         await createPublication(publicationData)
       }

@@ -70,33 +70,17 @@ export const newsValidationRules = {
   title: [
     commonValidationRules.required('请输入新闻标题'),
     commonValidationRules.minLength(2, '标题至少2个字符'),
-    commonValidationRules.maxLength(100, '标题最多100个字符'),
+    commonValidationRules.maxLength(200, '标题最多200个字符'),
   ],
   content: [
     commonValidationRules.required('请输入新闻内容'),
     commonValidationRules.minLength(10, '内容至少10个字符'),
   ],
   summary: [
-    commonValidationRules.maxLength(200, '摘要最多200个字符'),
+    commonValidationRules.maxLength(500, '摘要最多500个字符'),
   ],
-  author: [
-    commonValidationRules.required('请输入作者'),
-    commonValidationRules.maxLength(50, '作者名称最多50个字符'),
-  ],
-  featuredImage: [
+  image: [
     commonValidationRules.url(),
-  ],
-  externalUrl: [
-    commonValidationRules.url(),
-  ],
-  viewCount: [
-    commonValidationRules.nonNegativeInteger(),
-  ],
-  location: [
-    commonValidationRules.maxLength(100, '地点最多100个字符'),
-  ],
-  contactInfo: [
-    commonValidationRules.maxLength(200, '联系信息最多200个字符'),
   ],
 }
 

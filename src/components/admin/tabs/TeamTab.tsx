@@ -150,7 +150,7 @@ const TeamTab: React.FC<TeamTabProps> = ({ className = '' }) => {
     setIsSubmitting(true)
     try {
       if (editingMember) {
-        await updateTeamMember(editingMember.id, memberData)
+        await updateTeamMember(memberData, editingMember.id)
       } else {
         await createTeamMember(memberData)
       }

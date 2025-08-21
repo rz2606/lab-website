@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { 
   Tag, 
   Space, 
@@ -15,14 +15,18 @@ import {
   UserOutlined, 
   LinkOutlined, 
   FileTextOutlined,
-  ActivityOutlined,
+  BarChartOutlined,
   TagOutlined,
-  TeamOutlined
+  TeamOutlined,
+  AppstoreOutlined,
+  StarOutlined,
+  GithubOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
 import type { Tool } from '@/types/admin'
-import { UnifiedForm } from '../../common/UnifiedForm'
-import { UnifiedFormField } from '../../common/UnifiedFormField'
-import { LoadingSpinner } from '../common/LoadingSpinner'
+import UnifiedForm from '../../common/UnifiedForm'
+import UnifiedFormField from '../../common/UnifiedFormField'
+import LoadingSpinner from '../common/LoadingSpinner'
 import dayjs from 'dayjs'
 
 
@@ -49,12 +53,8 @@ const ToolForm: React.FC<ToolFormProps> = ({
   const [screenshotInput, setScreenshotInput] = useState('')
 
   // 初始化表单数据
-  useEffect(() => {
-    setFormData(initialValues)
-  }, [tool])
-
   // 准备初始值
-  const initialValues = {
+  const initialValues = useMemo(() => ({
     name: tool?.name || '',
     description: tool?.description || '',
     shortDescription: tool?.shortDescription || '',
@@ -85,7 +85,11 @@ const ToolForm: React.FC<ToolFormProps> = ({
     issueCount: tool?.issueCount || 0,
     releaseDate: tool?.releaseDate ? dayjs(tool.releaseDate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
     lastUpdate: tool?.lastUpdate ? dayjs(tool.lastUpdate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-  }
+  }), [tool])
+
+  useEffect(() => {
+    setFormData(initialValues)
+  }, [initialValues])
 
   // 添加标签
   const addTag = () => {
@@ -178,7 +182,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
   }
 
   // 处理表单提交
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       // 验证日期
       if (values.lastUpdate && values.releaseDate && new Date(values.lastUpdate) < new Date(values.releaseDate)) {
@@ -635,7 +639,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
       </Card>
 
       {/* 统计信息 */}
-      <Card title={<><ActivityOutlined /> 统计信息</>} className="mb-6">
+      <Card title={<><BarChartOutlined /> 统计信息</>} className="mb-6">
         <Row gutter={16}>
           <Col xs={24} md={6}>
             <UnifiedFormField

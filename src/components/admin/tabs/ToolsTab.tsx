@@ -152,7 +152,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ className = '' }) => {
     setIsSubmitting(true)
     try {
       if (editingTool) {
-        await updateTool(editingTool.id, toolData)
+        await updateTool(toolData, editingTool.id)
       } else {
         await createTool(toolData)
       }

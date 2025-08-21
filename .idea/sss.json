@@ -1,11 +1,54 @@
 {
-  "data": 数据,
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 7,
-    "totalPages": 1,
-    "hasNext": false,
-    "hasPrev": false
-  }
+  "pi": {
+    "id": 4,
+    "name": "张教授",
+    "photo": "/uploads/pi-avatar.jpg",
+    "title": "教授，博士生导师",
+    "email": "zhang@university.edu.cn",
+    "experience": "2015-至今：某大学计算机学院教授\n2010-2015：某研究所副研究员\n2008-2010：博士后研究员",
+    "positions": "中国计算机学会生物信息学专委会委员\n国际药物信息学会会员\n《生物信息学》期刊编委",
+    "awards": "2023年：国家自然科学基金优秀青年基金\n2021年：省科技进步二等奖\n2019年：青年科学家奖",
+    "papers": "Nature Computational Science (2025)\nBriefings in Bioinformatics (2021)\nJournal of Chemical Information and Modeling (2020)",
+    "createdAt": "2025-08-21T06:14:37.864Z",
+    "updatedAt": "2025-08-21T06:29:13.257Z",
+    "createdBy": null,
+    "updatedBy": null
+  },
+  "researchers": [
+    {
+      "id": 38,
+      "name": "张小明",
+      "photo": "/uploads/researcher5.jpg",
+      "email": "zhangxiaoming@university.edu.cn",
+      "direction": "蛋白质结构预测",
+      "type": "researcher",
+      "createdAt": "2025-08-21T06:14:37.866Z",
+      "updatedAt": "2025-08-21T06:14:37.866Z",
+      "createdBy": null,
+      "updatedBy": null
+    }
+  ],
+  "graduates": [
+    {
+      "id": 864,
+      "serialNumber": null,
+      "name": "吴敏",
+      "enrollmentDate": null,
+      "graduationDate": null,
+      "advisor": null,
+      "degree": null,
+      "discipline": null,
+      "thesisTitle": null,
+      "remarks": null,
+      "hasPaper": null,
+      "position": "药物化学家",
+      "email": "wu.min@novartis.com",
+      "company": "诺华制药",
+      "graduationYear": 2019,
+      "createdAt": "2025-08-21T06:14:37.881Z",
+      "updatedAt": "2025-08-21T06:14:37.881Z",
+      "createdBy": null,
+      "updatedBy": null
+    }
+  ]
 }

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { Form, Button, Space, message, Spin, Alert } from 'antd'
+import React, { useState, useCallback } from 'react'
+import { Form, Button, Space, Spin, Alert, App } from 'antd'
 import type { FormProps, FormInstance } from 'antd'
 import { formStyles } from '@/utils/formStyles'
 import { LoadingOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
@@ -60,7 +60,7 @@ interface UnifiedFormProps extends Omit<FormProps, 'onFinish'> {
   scrollToFirstError?: boolean
   
   // 表单验证失败时的回调
-  onValidationFailed?: (errorInfo: { errorFields: Array<{ name: string[]; errors: string[] }> }) => void
+  onValidationFailed?: (errorInfo: any) => void
   
   // 是否显示实时验证状态
   showValidationStatus?: boolean
@@ -101,11 +101,11 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
   resetOnSuccess = false,
   ...formProps
 }) => {
+  const { message } = App.useApp()
   const [form] = Form.useForm()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const [hasChanges, setHasChanges] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   
   // 使用传入的 formRef 或默认的 form 实例
@@ -113,19 +113,17 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
   
   // 监听表单字段变化
   const handleFieldsChange = useCallback(() => {
-    setHasChanges(true)
     setSubmitSuccess(false)
     setValidationErrors([])
   }, [])
   
   // 监听表单值变化，用于实时验证
   const handleValuesChange = useCallback((changedValues: Record<string, unknown>, allValues: Record<string, unknown>) => {
-    setHasChanges(true)
     setSubmitSuccess(false)
     
     // 如果有自定义的 onValuesChange，调用它
     formProps.onValuesChange?.(changedValues, allValues)
-  }, [formProps.onValuesChange])
+  }, [formProps])
   
   // 处理表单提交
   const handleSubmit = useCallback(async (values: Record<string, unknown>) => {
@@ -145,7 +143,6 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
       
       if (resetOnSuccess) {
         formInstance.resetFields()
-        setHasChanges(false)
       }
     } catch (error) {
       console.error('表单提交失败:', error)
@@ -165,7 +162,6 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
       setIsResetting(true)
       formInstance.resetFields()
       setValidationErrors([])
-      setHasChanges(false)
       setSubmitSuccess(false)
       onReset?.()
       message.success('表单已重置')
@@ -178,9 +174,9 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
   }, [formInstance, onReset, isResetting])
   
   // 处理表单验证失败
-  const handleFinishFailed = useCallback((errorInfo: { errorFields: Array<{ name: string[]; errors: string[] }> }) => {
+  const handleFinishFailed = useCallback((errorInfo: any) => {
     console.warn('表单验证失败:', errorInfo)
-    const errors = errorInfo.errorFields.flatMap(field => field.errors)
+    const errors = errorInfo.errorFields.flatMap((field: any) => field.errors)
     setValidationErrors(errors)
     setSubmitSuccess(false)
     
@@ -273,8 +269,8 @@ const UnifiedForm: React.FC<UnifiedFormProps> = ({
       
       <Form
         form={formRef ? undefined : form}
-        {...layoutConfig}
         {...formProps}
+        {...layoutConfig}
         onFinish={handleSubmit}
         onFinishFailed={handleFinishFailed}
         onFieldsChange={handleFieldsChange}

@@ -6,6 +6,7 @@ export interface User {
   email: string
   roleType: string
   name?: string
+  avatar?: string
   isActive: boolean
   lastLogin?: string
   createdAt: string
@@ -41,13 +42,14 @@ export interface Tool {
 export interface News {
   id: number
   title: string
-  summary?: string
   content: string
+  summary?: string
   image?: string
-  isPinned?: boolean
-  tags?: string
+  isPinned: boolean
   createdAt: string
-  updatedAt?: string
+  updatedAt: string
+  createdBy?: number
+  updatedBy?: number
 }
 
 // 统一的团队成员接口

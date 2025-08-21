@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Form, Input, Select, Button, Card, DatePicker, Space, Tag, Row, Col, message, Divider } from 'antd'
 import { User, Users, Mail, Phone, Globe, Github, Linkedin, Twitter, Calendar, Plus, X } from 'lucide-react'
-import { TeamMember } from '@/types/team'
-import { LoadingSpinner } from '../common/LoadingSpinner'
+import { TeamMember } from '@/types/admin'
+import LoadingSpinner from '../common/LoadingSpinner'
+import FileUpload from '../../FileUpload'
 import dayjs from 'dayjs'
 
 interface TeamMemberFormProps {
@@ -180,10 +181,17 @@ const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
             <Col xs={24} md={12}>
               <Form.Item
                 name="avatar"
-                label="头像URL"
-                rules={[{ validator: validateUrl }]}
+                label="头像"
               >
-                <Input placeholder="请输入头像图片URL" />
+                <FileUpload
+                  accept="image/*"
+                  maxSize={5}
+                  onChange={(url) => {
+                    form.setFieldValue('avatar', url)
+                  }}
+                  value={form.getFieldValue('avatar')}
+                  placeholder="点击或拖拽上传头像图片"
+                />
               </Form.Item>
             </Col>
           </Row>
