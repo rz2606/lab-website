@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
     
     // 构建查询条件
-    const where: any = {}
+    const where: Record<string, unknown> = {}
     
     if (search) {
       where.OR = [
@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
       skip,
       take: limit,
       include: {
-        createdByUser: {
+        creator: {
           select: { id: true, username: true }
         },
-        updatedByUser: {
+        updater: {
           select: { id: true, username: true }
         }
       }
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error('获取文章失败:', error)
     return NextResponse.json(
-      { error: '获取文章失败' },
+      { error: '获取文章失败: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     )
   }
@@ -158,10 +158,10 @@ export async function POST(request: NextRequest) {
     const article = await db.article.create({
       data: createData,
       include: {
-        createdByUser: {
+        creator: {
           select: { id: true, username: true }
         },
-        updatedByUser: {
+        updater: {
           select: { id: true, username: true }
         }
       }

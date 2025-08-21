@@ -42,8 +42,10 @@ const UsersTab: React.FC<UsersTabProps> = ({ className = '' }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
-  const [sortField, setSortField] = useState<keyof User>('createdAt')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // 排序状态 (暂时注释，未来可能需要)
+  // const [sortField, setSortField] = useState<keyof User>('createdAt')
+  // const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   
   // 模态框状态
@@ -81,28 +83,8 @@ const UsersTab: React.FC<UsersTabProps> = ({ className = '' }) => {
       return matchesSearch && matchesRole && matchesStatus
     })
 
-    // 排序
-    filtered.sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
-      
-      if (aValue === undefined || aValue === null) return 1
-      if (bValue === undefined || bValue === null) return -1
-      
-      let comparison = 0
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue)
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        comparison = aValue.getTime() - bValue.getTime()
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue))
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-
     return filtered
-  }, [users, searchTerm, filterRole, filterStatus, sortField, sortDirection])
+  }, [users, searchTerm, filterRole, filterStatus])
 
   // 计算分页数据
   const paginatedData = React.useMemo(() => {
@@ -123,28 +105,28 @@ const UsersTab: React.FC<UsersTabProps> = ({ className = '' }) => {
   }
 
   // 处理排序
-  const handleSort = (field: keyof User) => {
-    if (field === sortField) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // const handleSort = (field: keyof User) => {
+  //   if (field === sortField) {
+  //     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortField(field)
+  //     setSortDirection('asc')
+  //   }
+  // }
 
   // 处理用户选择
-  const handleUserSelect = (userId: string, selected: boolean) => {
-    setSelectedUsers(prev => 
-      selected 
-        ? [...prev, userId]
-        : prev.filter(id => id !== userId)
-    )
-  }
+  // const handleUserSelect = (userId: string, selected: boolean) => {
+  //   setSelectedUsers(prev => 
+  //     selected 
+  //       ? [...prev, userId]
+  //       : prev.filter(id => id !== userId)
+  //   )
+  // }
 
   // 处理全选
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedUsers(selected ? paginatedData.map(user => user.id) : [])
-  }
+  // const handleSelectAll = (selected: boolean) => {
+  //   setSelectedUsers(selected ? paginatedData.map(user => user.id) : [])
+  // }
 
   // 打开新增用户模态框
   const handleAddUser = () => {

@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import path from 'path'
+import { NextResponse } from 'next/server'
 
-const execAsync = promisify(exec)
-
-export async function POST(request: NextRequest) {
+// 生成测试数据的API路由
+export async function POST() {
   try {
     // 执行 Prisma seed 命令
     const projectRoot = process.cwd()

@@ -138,28 +138,29 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
     
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorObj = error as { code?: string; meta?: { target?: string[] }; message?: string }
     console.error('创建管理员账户失败:', {
-      error: error.message,
-      code: error.code,
-      meta: error.meta,
-      stack: error.stack
+      error: error instanceof Error ? error.message : String(error),
+      code: errorObj.code,
+      meta: errorObj.meta,
+      stack: error instanceof Error ? error.stack : undefined
     })
     
     let errorMessage = '创建管理员账户失败'
     
-    if (error.code === 'P2002') {
+    if (errorObj.code === 'P2002') {
       // Prisma唯一约束错误
-      if (error.meta?.target?.includes('username')) {
+      if (errorObj.meta?.target?.includes('username')) {
         errorMessage = '用户名已存在'
-      } else if (error.meta?.target?.includes('email')) {
+      } else if (errorObj.meta?.target?.includes('email')) {
         errorMessage = '邮箱已被使用'
       } else {
         errorMessage = '数据冲突，请检查用户名和邮箱'
       }
-    } else if (error.code === 'P2025') {
+    } else if (errorObj.code === 'P2025') {
       errorMessage = '数据库表不存在，请先初始化数据库'
-    } else if (error.message) {
+    } else if (error instanceof Error && error.message) {
       errorMessage = error.message
     }
     

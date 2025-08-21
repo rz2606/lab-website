@@ -1,0 +1,192 @@
+/* 模态框自定义样式 */
+
+/* 自定义滚动条样式 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 模态框动画 */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+/* 模态框背景模糊效果 */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 表单输入框增强样式 */
+.form-input-enhanced {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg;
+  @apply focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
+  @apply transition-all duration-200;
+  @apply placeholder-gray-400;
+}
+
+.form-input-enhanced:hover {
+  @apply border-gray-400;
+}
+
+.form-input-enhanced.error {
+  @apply border-red-500 focus:ring-red-500/20 focus:border-red-500;
+}
+
+.form-input-enhanced.success {
+  @apply border-green-500 focus:ring-green-500/20 focus:border-green-500;
+}
+
+/* 表单标签增强样式 */
+.form-label-enhanced {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.form-label-enhanced.required::after {
+  content: ' *';
+  @apply text-red-500;
+}
+
+/* 错误提示样式 */
+.form-error {
+  @apply text-sm text-red-600 mt-1 flex items-center;
+}
+
+/* 成功提示样式 */
+.form-success {
+  @apply text-sm text-green-600 mt-1 flex items-center;
+}
+
+/* 表单分组样式 */
+.form-group {
+  @apply mb-8 p-6 bg-gradient-to-br from-gray-50/50 to-white rounded-xl border border-gray-200/60;
+  @apply shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.form-group-title {
+  @apply text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200/80;
+  @apply flex items-center space-x-2;
+}
+
+.form-group-title svg {
+  @apply flex-shrink-0;
+}
+
+/* 加载状态覆盖层 */
+.loading-overlay {
+  @apply absolute inset-0 bg-white/80 backdrop-blur-sm z-10;
+  @apply flex items-center justify-center;
+}
+
+/* 按钮增强样式 */
+.btn-enhanced {
+  @apply inline-flex items-center justify-center;
+  @apply font-medium rounded-lg transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply transform hover:scale-105 active:scale-95;
+  @apply px-6 py-3 text-sm;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/30;
+  @apply shadow-lg hover:shadow-xl;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+  @apply focus:ring-blue-500/30 shadow-sm hover:shadow-md;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/30;
+  @apply shadow-lg hover:shadow-xl;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500/30;
+  @apply shadow-lg hover:shadow-xl;
+}
+
+/* 响应式网格布局 */
+.form-grid {
+  @apply grid gap-6;
+  @apply grid-cols-1 md:grid-cols-2;
+}
+
+.form-grid.single {
+  @apply grid-cols-1;
+}
+
+.form-grid.triple {
+  @apply grid-cols-1 md:grid-cols-3;
+}
+
+.form-grid.four {
+  @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+/* 表单字段间距 */
+.form-field {
+  @apply space-y-2;
+}
+
+.form-field + .form-field {
+  @apply mt-4;
+}
+
+/* 卡片样式 */
+.card-enhanced {
+  @apply bg-white rounded-xl shadow-sm border border-gray-200/50;
+  @apply hover:shadow-md transition-shadow duration-200;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200/80 bg-gray-50/50;
+}
+
+.card-body {
+  @apply px-6 py-4;
+}
+
+.card-footer {
+  @apply px-6 py-4 border-t border-gray-200/80 bg-gray-50/30;
+}

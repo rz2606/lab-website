@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 // import { useRouter } from 'next/router'
 import { Bell, Settings, User, LogOut, Menu, Search, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import Image from 'next/image'
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void
@@ -225,9 +226,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, className = '' 
             >
               <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
                 {user?.avatar ? (
-                  <img
+                  <Image
                     src={user.avatar}
                     alt={user.name}
+                    width={32}
+                    height={32}
                     className="h-8 w-8 rounded-full object-cover"
                   />
                 ) : (

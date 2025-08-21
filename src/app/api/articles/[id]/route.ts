@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { db } from '@/lib/db'
+import { requireAdmin, getCurrentUserId } from '@/lib/auth-middleware'
+import { safeSetCreatedAndUpdatedBy } from '@/lib/user-validation'
 
 // GET /api/articles/[id] - 获取单篇文章详情
 export async function GET(
@@ -18,9 +18,17 @@ export async function GET(
       )
     }
 
-    const article = await prisma.article.findUnique({
+    const article = await db.article.findUnique({
       where: {
         id: articleId
+      },
+      include: {
+        creator: {
+          select: { id: true, username: true }
+        },
+        updater: {
+          select: { id: true, username: true }
+        }
       }
     })
 
@@ -46,6 +54,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // 验证管理员权限
+  const authResult = await requireAdmin(request)
+  if (authResult) return authResult
+  
   try {
     const articleId = parseInt(params.id)
     
@@ -68,7 +80,7 @@ export async function PUT(
       impactFactor,
       category,
       citationCount,
-      openAccess
+      isOpenAccess
     } = body
 
     // 验证必填字段
@@ -80,7 +92,7 @@ export async function PUT(
     }
 
     // 检查文章是否存在
-    const existingArticle = await prisma.article.findUnique({
+    const existingArticle = await db.article.findUnique({
       where: { id: articleId }
     })
 
@@ -91,21 +103,37 @@ export async function PUT(
       )
     }
 
+    const currentUserId = getCurrentUserId(request)
+    
+    // 构建更新数据
+    const updateData: Record<string, unknown> = {
+      title,
+      authors,
+      journal,
+      publishedDate: new Date(publishedDate),
+      doi: doi || null,
+      abstract: abstract || null,
+      keywords: keywords || null,
+      impactFactor: impactFactor ? parseFloat(impactFactor) : null,
+      category,
+      citationCount: citationCount ? parseInt(citationCount) : null,
+      isOpenAccess: Boolean(isOpenAccess)
+    }
+    
+    // 安全地设置updatedBy字段
+    await safeSetCreatedAndUpdatedBy(updateData, currentUserId, false)
+    
     // 更新文章
-    const updatedArticle = await prisma.article.update({
+    const updatedArticle = await db.article.update({
       where: { id: articleId },
-      data: {
-        title,
-        authors,
-        journal,
-        publishedDate: new Date(publishedDate),
-        doi: doi || null,
-        abstract: abstract || null,
-        keywords: keywords || null,
-        impactFactor: impactFactor ? parseFloat(impactFactor) : null,
-        category,
-        citationCount: citationCount ? parseInt(citationCount) : null,
-        openAccess: Boolean(openAccess)
+      data: updateData,
+      include: {
+        creator: {
+          select: { id: true, username: true }
+        },
+        updater: {
+          select: { id: true, username: true }
+        }
       }
     })
 
@@ -124,6 +152,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // 验证管理员权限
+  const authResult = await requireAdmin(request)
+  if (authResult) return authResult
+  
   try {
     const articleId = parseInt(params.id)
     
@@ -135,7 +167,7 @@ export async function DELETE(
     }
 
     // 检查文章是否存在
-    const existingArticle = await prisma.article.findUnique({
+    const existingArticle = await db.article.findUnique({
       where: { id: articleId }
     })
 
@@ -147,7 +179,7 @@ export async function DELETE(
     }
 
     // 删除文章
-    await prisma.article.delete({
+    await db.article.delete({
       where: { id: articleId }
     })
 

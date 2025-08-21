@@ -3,6 +3,7 @@ import AdminHeader from './AdminHeader'
 import AdminSidebar from './AdminSidebar'
 import ErrorBoundary from '../common/ErrorBoundary'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { ToastProvider } from '../common/Toast'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -64,7 +65,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${className}`}>
+    <ToastProvider>
+      <div className={`min-h-screen bg-gray-50 ${className}`}>
       {/* 移动端遮罩 */}
       {isMobile && sidebarOpen && (
         <div 
@@ -142,6 +144,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         </div>
       </footer>
     </div>
+    </ToastProvider>
   )
 }
 

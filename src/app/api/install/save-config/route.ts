@@ -49,11 +49,11 @@ SYSTEM_INSTALLED="false"
       { status: 200 }
     )
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('保存数据库配置失败:', error)
     
     return NextResponse.json(
-      { error: '保存配置文件失败: ' + error.message },
+      { error: '保存配置文件失败: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     )
   }

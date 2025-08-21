@@ -44,8 +44,10 @@ const PublicationsTab: React.FC<PublicationsTabProps> = ({ className = '' }) => 
   const [filterYear, setFilterYear] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterQuartile, setFilterQuartile] = useState<string>('')
-  const [sortField, setSortField] = useState<keyof Publication>('year')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // 排序状态 (暂时注释，未来可能需要)
+  // const [sortField, setSortField] = useState<keyof Publication>('createdAt')
+  // const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedPublications, setSelectedPublications] = useState<string[]>([])
   
   // 模态框状态
@@ -89,32 +91,8 @@ const PublicationsTab: React.FC<PublicationsTabProps> = ({ className = '' }) => 
       return matchesSearch && matchesType && matchesYear && matchesStatus && matchesQuartile
     })
 
-    // 排序
-    filtered.sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
-      
-      if (aValue === undefined || aValue === null) return 1
-      if (bValue === undefined || bValue === null) return -1
-      
-      let comparison = 0
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue)
-      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        comparison = aValue.getTime() - bValue.getTime()
-      } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
-        comparison = aValue.length - bValue.length
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue))
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-
     return filtered
-  }, [publications, searchTerm, filterType, filterYear, filterStatus, filterQuartile, sortField, sortDirection])
+  }, [publications, searchTerm, filterType, filterYear, filterStatus, filterQuartile])
 
   // 计算分页数据
   const paginatedData = React.useMemo(() => {
@@ -135,28 +113,28 @@ const PublicationsTab: React.FC<PublicationsTabProps> = ({ className = '' }) => 
   }
 
   // 处理排序
-  const handleSort = (field: keyof Publication) => {
-    if (field === sortField) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // const handleSort = (field: keyof Publication) => {
+  //   if (field === sortField) {
+  //     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortField(field)
+  //     setSortDirection('asc')
+  //   }
+  // }
 
-  // 处理发表成果选择
-  const handlePublicationSelect = (publicationId: string, selected: boolean) => {
-    setSelectedPublications(prev => 
-      selected 
-        ? [...prev, publicationId]
-        : prev.filter(id => id !== publicationId)
-    )
-  }
+  // 处理出版物选择
+  // const handlePublicationSelect = (publicationId: string, selected: boolean) => {
+  //   setSelectedPublications(prev => 
+  //     selected 
+  //       ? [...prev, publicationId]
+  //       : prev.filter(id => id !== publicationId)
+  //   )
+  // }
 
   // 处理全选
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedPublications(selected ? paginatedData.map(publication => publication.id) : [])
-  }
+  // const handleSelectAll = (selected: boolean) => {
+  //   setSelectedPublications(selected ? paginatedData.map(pub => pub.id) : [])
+  // }
 
   // 打开新增发表成果模态框
   const handleAddPublication = () => {

@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { Edit, Trash2, FileText, ExternalLink, Eye, Calendar, User, Clock } from 'lucide-react'
 import type { Article, PaginationInfo } from '@/types/admin'
 import { TableLoadingRow } from '../common/LoadingSpinner'
@@ -226,9 +227,11 @@ const ArticlesTable: React.FC<ArticlesTableProps> = ({
                       {renderTags(article.tags)}
                       {article.featuredImage && (
                         <div className="mt-2">
-                          <img
+                          <Image
                             src={article.featuredImage}
                             alt={article.title}
+                            width={80}
+                            height={48}
                             className="h-12 w-20 object-cover rounded border"
                           />
                         </div>

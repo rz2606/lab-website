@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Calendar, FileText, ExternalLink, Search, Filter } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Calendar, ExternalLink, Search } from 'lucide-react'
 import Link from 'next/link'
 
 interface Article {
@@ -42,7 +42,7 @@ const ArticlesPage = () => {
   ]
 
   // 获取文章数据
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -70,11 +70,11 @@ const ArticlesPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, searchTerm, selectedCategory, sortBy, sortOrder])
 
   useEffect(() => {
     fetchArticles()
-  }, [currentPage, sortBy, sortOrder, selectedCategory])
+  }, [fetchArticles])
 
   // 搜索处理
   const handleSearch = () => {
@@ -91,11 +91,11 @@ const ArticlesPage = () => {
 
   const years = Object.keys(yearStats).map(Number).sort((a, b) => b - a)
 
-  // 按类别统计
-  const categoryStats = articles.reduce((acc, article) => {
-    acc[article.category] = (acc[article.category] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  // 按类别统计（暂时注释掉未使用的变量）
+  // const categoryStats = articles.reduce((acc, article) => {
+  //   acc[article.category] = (acc[article.category] || 0) + 1
+  //   return acc
+  // }, {} as Record<string, number>)
 
   if (loading && articles.length === 0) {
     return (

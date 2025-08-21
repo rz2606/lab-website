@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  transpilePackages: ['antd'],
   eslint: {
     // 在构建时忽略 ESLint 错误
     ignoreDuringBuilds: true,

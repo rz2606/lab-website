@@ -13,7 +13,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
-  placeholder = '搜索...',
+  placeholder = '搜索新闻标题、内容...',
   value = '',
   onSearch,
   onClear,
@@ -118,7 +118,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       {/* 搜索提示 */}
       {searchTerm && (
         <div className="absolute top-full left-0 right-0 mt-1 text-xs text-gray-500 bg-white px-3 py-1 border border-gray-200 rounded-md shadow-sm z-10">
-          搜索: "{searchTerm}"
+          搜索: &quot;{searchTerm}&quot;
         </div>
       )}
     </div>

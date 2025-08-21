@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import { Calendar, ExternalLink, ArrowLeft, FileText, Users, Tag } from 'lucide-react'
 import Link from 'next/link'
 
@@ -24,10 +24,9 @@ interface Article {
 
 const ArticleDetailPage = () => {
   const params = useParams()
-  const router = useRouter()
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const categories = {
     'research': '研究文章',
@@ -38,7 +37,7 @@ const ArticleDetailPage = () => {
   }
 
   // 获取文章详情
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/articles/${params.id}`)
@@ -56,13 +55,13 @@ const ArticleDetailPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id])
 
   useEffect(() => {
     if (params.id) {
       fetchArticle()
     }
-  }, [params.id])
+  }, [fetchArticle, params.id])
 
   if (loading) {
     return (

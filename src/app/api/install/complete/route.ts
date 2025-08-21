@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import fs from 'fs/promises'
 import path from 'path'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const projectRoot = process.cwd()
     const envPath = path.join(projectRoot, '.env')
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     let envContent = ''
     try {
       envContent = await fs.readFile(envPath, 'utf8')
-    } catch (error) {
+    } catch {
       // 如果.env文件不存在，创建基本内容
       envContent = '# Environment Variables\n'
     }
@@ -54,11 +54,11 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('标记安装完成失败:', error)
     
     return NextResponse.json(
-      { error: '标记安装完成失败: ' + error.message },
+      { error: '标记安装完成失败: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     )
   }

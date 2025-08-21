@@ -44,8 +44,10 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ className = '' }) => {
   const [filterCategory, setFilterCategory] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterLicense, setFilterLicense] = useState<string>('')
-  const [sortField, setSortField] = useState<keyof Tool>('releaseDate')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // 排序状态 (暂时注释，未来可能需要)
+  // const [sortField, setSortField] = useState<keyof Tool>('createdAt')
+  // const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedTools, setSelectedTools] = useState<string[]>([])
   
   // 模态框状态
@@ -88,32 +90,8 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ className = '' }) => {
       return matchesSearch && matchesType && matchesCategory && matchesStatus && matchesLicense
     })
 
-    // 排序
-    filtered.sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
-      
-      if (aValue === undefined || aValue === null) return 1
-      if (bValue === undefined || bValue === null) return -1
-      
-      let comparison = 0
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue)
-      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        comparison = aValue.getTime() - bValue.getTime()
-      } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
-        comparison = aValue.length - bValue.length
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue))
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-
     return filtered
-  }, [tools, searchTerm, filterType, filterCategory, filterStatus, filterLicense, sortField, sortDirection])
+  }, [tools, searchTerm, filterType, filterCategory, filterStatus, filterLicense])
 
   // 计算分页数据
   const paginatedData = React.useMemo(() => {
@@ -134,28 +112,28 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ className = '' }) => {
   }
 
   // 处理排序
-  const handleSort = (field: keyof Tool) => {
-    if (field === sortField) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // const handleSort = (field: keyof Tool) => {
+  //   if (field === sortField) {
+  //     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortField(field)
+  //     setSortDirection('asc')
+  //   }
+  // }
 
   // 处理工具选择
-  const handleToolSelect = (toolId: string, selected: boolean) => {
-    setSelectedTools(prev => 
-      selected 
-        ? [...prev, toolId]
-        : prev.filter(id => id !== toolId)
-    )
-  }
+  // const handleToolSelect = (toolId: string, selected: boolean) => {
+  //   setSelectedTools(prev => 
+  //     selected 
+  //       ? [...prev, toolId]
+  //       : prev.filter(id => id !== toolId)
+  //   )
+  // }
 
   // 处理全选
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedTools(selected ? paginatedData.map(tool => tool.id) : [])
-  }
+  // const handleSelectAll = (selected: boolean) => {
+  //   setSelectedTools(selected ? paginatedData.map(tool => tool.id) : [])
+  // }
 
   // 打开新增工具模态框
   const handleAddTool = () => {

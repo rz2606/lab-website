@@ -1,7 +1,36 @@
 import React, { useState, useEffect } from 'react'
-import { BookOpen, Calendar, Users, Tag, Link, FileText } from 'lucide-react'
+import { 
+  Form, 
+  Input, 
+  Select, 
+  Button, 
+  Card, 
+  Checkbox, 
+  DatePicker, 
+  InputNumber,
+  Space,
+  Tag,
+  message,
+  Row,
+  Col
+} from 'antd'
+import { 
+  FileText, 
+  Calendar, 
+  Users, 
+  Tag as TagIcon, 
+  Link, 
+  Eye, 
+  BookOpen,
+  Award,
+  Building
+} from 'lucide-react'
+import dayjs from 'dayjs'
 import type { Publication } from '@/types/admin'
 import LoadingSpinner from '../common/LoadingSpinner'
+
+const { TextArea } = Input
+const { Option } = Select
 
 interface PublicationFormProps {
   publication?: Publication | null
@@ -16,137 +45,96 @@ const PublicationForm: React.FC<PublicationFormProps> = ({
   onCancel,
   loading = false
 }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    authors: [] as string[],
-    journal: '',
-    conference: '',
-    year: new Date().getFullYear(),
-    volume: '',
-    issue: '',
-    pages: '',
-    publisher: '',
-    doi: '',
-    url: '',
-    abstract: '',
-    keywords: [] as string[],
-    type: 'journal' as 'journal' | 'conference' | 'book' | 'patent' | 'thesis',
-    status: 'published' as 'published' | 'accepted' | 'submitted' | 'draft',
-    featured: false,
-    citationCount: 0,
-    impactFactor: '',
-    quartile: '' as '' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
-  })
-  
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [form] = Form.useForm()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [authorInput, setAuthorInput] = useState('')
+  const [tagInput, setTagInput] = useState('')
   const [keywordInput, setKeywordInput] = useState('')
+  const [affiliationInput, setAffiliationInput] = useState('')
+  
+  const [authors, setAuthors] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>([])
+  const [keywords, setKeywords] = useState<string[]>([])
+  const [affiliations, setAffiliations] = useState<string[]>([])
 
   // 初始化表单数据
   useEffect(() => {
     if (publication) {
-      setFormData({
+      form.setFieldsValue({
         title: publication.title || '',
-        authors: publication.authors || [],
+        abstract: publication.abstract || '',
+        type: publication.type || 'journal',
         journal: publication.journal || '',
         conference: publication.conference || '',
-        year: publication.year || new Date().getFullYear(),
+        publisher: publication.publisher || '',
         volume: publication.volume || '',
         issue: publication.issue || '',
         pages: publication.pages || '',
-        publisher: publication.publisher || '',
+        year: publication.year || new Date().getFullYear(),
+        month: publication.month || '',
         doi: publication.doi || '',
+        isbn: publication.isbn || '',
+        issn: publication.issn || '',
         url: publication.url || '',
-        abstract: publication.abstract || '',
-        keywords: publication.keywords || [],
-        type: publication.type || 'journal',
-        status: publication.status || 'published',
-        featured: publication.featured || false,
+        pdfUrl: publication.pdfUrl || '',
         citationCount: publication.citationCount || 0,
-        impactFactor: publication.impactFactor || '',
-        quartile: publication.quartile || ''
+        status: publication.status || 'published',
+        visibility: publication.visibility || 'public',
+        featured: publication.featured || false,
+        openAccess: publication.openAccess || false,
+        peerReviewed: publication.peerReviewed !== false,
+        publishDate: publication.publishDate ? dayjs(publication.publishDate) : null,
+        submissionDate: publication.submissionDate ? dayjs(publication.submissionDate) : null,
+        acceptanceDate: publication.acceptanceDate ? dayjs(publication.acceptanceDate) : null,
+        impactFactor: publication.impactFactor || undefined,
+        quartile: publication.quartile || undefined,
+        venue: publication.venue || '',
+        location: publication.location || '',
+        note: publication.note || ''
       })
+      setAuthors(publication.authors || [])
+      setTags(publication.tags || [])
+      setKeywords(publication.keywords || [])
+      setAffiliations(publication.affiliations || [])
     } else {
-      setFormData({
+      form.setFieldsValue({
         title: '',
-        authors: [],
+        abstract: '',
+        type: 'journal',
         journal: '',
         conference: '',
-        year: new Date().getFullYear(),
+        publisher: '',
         volume: '',
         issue: '',
         pages: '',
-        publisher: '',
+        year: new Date().getFullYear(),
+        month: '',
         doi: '',
+        isbn: '',
+        issn: '',
         url: '',
-        abstract: '',
-        keywords: [],
-        type: 'journal',
-        status: 'published',
-        featured: false,
+        pdfUrl: '',
         citationCount: 0,
-        impactFactor: '',
-        quartile: ''
+        status: 'published',
+        visibility: 'public',
+        featured: false,
+        openAccess: false,
+        peerReviewed: true,
+        publishDate: dayjs(),
+        submissionDate: null,
+        acceptanceDate: null,
+        impactFactor: undefined,
+        quartile: undefined,
+        venue: '',
+        location: '',
+        note: ''
       })
+      setAuthors([])
+      setTags([])
+      setKeywords([])
+      setAffiliations([])
     }
-    setErrors({})
-  }, [publication])
-
-  // 表单验证
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    // 标题验证
-    if (!formData.title.trim()) {
-      newErrors.title = '标题不能为空'
-    }
-
-    // 作者验证
-    if (formData.authors.length === 0) {
-      newErrors.authors = '至少需要一个作者'
-    }
-
-    // 年份验证
-    const currentYear = new Date().getFullYear()
-    if (formData.year < 1900 || formData.year > currentYear + 5) {
-      newErrors.year = `年份应在1900到${currentYear + 5}之间`
-    }
-
-    // 根据类型验证必填字段
-    if (formData.type === 'journal' && !formData.journal.trim()) {
-      newErrors.journal = '期刊名称不能为空'
-    }
-    if (formData.type === 'conference' && !formData.conference.trim()) {
-      newErrors.conference = '会议名称不能为空'
-    }
-    if ((formData.type === 'book' || formData.type === 'thesis') && !formData.publisher.trim()) {
-      newErrors.publisher = '出版社不能为空'
-    }
-
-    // DOI验证
-    if (formData.doi && !/^10\.\d{4,}\/.+/.test(formData.doi)) {
-      newErrors.doi = '请输入有效的DOI格式（如：10.1000/example）'
-    }
-
-    // URL验证
-    if (formData.url && !isValidUrl(formData.url)) {
-      newErrors.url = '请输入有效的URL地址'
-    }
-
-    // 影响因子验证
-    if (formData.impactFactor && (isNaN(Number(formData.impactFactor)) || Number(formData.impactFactor) < 0)) {
-      newErrors.impactFactor = '影响因子必须是非负数'
-    }
-
-    // 引用次数验证
-    if (formData.citationCount < 0) {
-      newErrors.citationCount = '引用次数不能为负数'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+  }, [publication, form])
 
   // URL验证函数
   const isValidUrl = (url: string) => {
@@ -158,78 +146,214 @@ const PublicationForm: React.FC<PublicationFormProps> = ({
     }
   }
 
-  // 处理输入变化
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    // 清除对应字段的错误
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
-    }
+  // DOI验证函数
+  const isValidDoi = (doi: string) => {
+    const doiPattern = /^10\.\d{4,}\/.+/
+    return doiPattern.test(doi)
+  }
+
+  // ISBN验证函数
+  const isValidIsbn = (isbn: string) => {
+    const isbnPattern = /^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$/
+    return isbnPattern.test(isbn.replace(/[- ]/g, ''))
+  }
+
+  // ISSN验证函数
+  const isValidIssn = (issn: string) => {
+    const issnPattern = /^\d{4}-\d{3}[\dX]$/
+    return issnPattern.test(issn)
+  }
+
+  // 表单验证规则
+  const validationRules = {
+    title: [
+      { required: true, message: '请输入出版物标题' },
+      { min: 5, message: '出版物标题至少需要5个字符' },
+      { max: 300, message: '出版物标题不能超过300个字符' }
+    ],
+    abstract: [
+      { required: true, message: '请输入摘要' },
+      { min: 100, message: '摘要至少需要100个字符' },
+      { max: 2000, message: '摘要不能超过2000个字符' }
+    ],
+    year: [
+      { required: true, message: '请输入发表年份' },
+      { 
+        validator: (_, value) => {
+          const currentYear = new Date().getFullYear()
+          if (value && (value < 1900 || value > currentYear + 5)) {
+            return Promise.reject(new Error(`年份应在1900-${currentYear + 5}之间`))
+          }
+          return Promise.resolve()
+        }
+      }
+    ],
+    doi: [
+      { 
+        validator: (_, value) => {
+          if (!value || isValidDoi(value)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('请输入有效的DOI格式'))
+        }
+      }
+    ],
+    isbn: [
+      { 
+        validator: (_, value) => {
+          if (!value || isValidIsbn(value)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('请输入有效的ISBN格式'))
+        }
+      }
+    ],
+    issn: [
+      { 
+        validator: (_, value) => {
+          if (!value || isValidIssn(value)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('请输入有效的ISSN格式（如：1234-5678）'))
+        }
+      }
+    ],
+    url: [
+      { 
+        validator: (_, value) => {
+          if (!value || isValidUrl(value)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('请输入有效的URL地址'))
+        }
+      }
+    ],
+    pdfUrl: [
+      { 
+        validator: (_, value) => {
+          if (!value || isValidUrl(value)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('请输入有效的PDF URL地址'))
+        }
+      }
+    ],
+    impactFactor: [
+      { 
+        validator: (_, value) => {
+          if (!value || (value >= 0 && value <= 100)) {
+            return Promise.resolve()
+          }
+          return Promise.reject(new Error('影响因子应在0-100之间'))
+        }
+      }
+    ]
   }
 
   // 添加作者
   const addAuthor = () => {
-    if (authorInput.trim() && !formData.authors.includes(authorInput.trim())) {
-      handleInputChange('authors', [...formData.authors, authorInput.trim()])
+    if (authorInput.trim() && !authors.includes(authorInput.trim())) {
+      setAuthors([...authors, authorInput.trim()])
       setAuthorInput('')
     }
   }
 
   // 删除作者
   const removeAuthor = (index: number) => {
-    const newAuthors = formData.authors.filter((_, i) => i !== index)
-    handleInputChange('authors', newAuthors)
+    setAuthors(authors.filter((_, i) => i !== index))
+  }
+
+  // 添加标签
+  const addTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()])
+      setTagInput('')
+    }
+  }
+
+  // 删除标签
+  const removeTag = (index: number) => {
+    setTags(tags.filter((_, i) => i !== index))
   }
 
   // 添加关键词
   const addKeyword = () => {
-    if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
-      handleInputChange('keywords', [...formData.keywords, keywordInput.trim()])
+    if (keywordInput.trim() && !keywords.includes(keywordInput.trim())) {
+      setKeywords([...keywords, keywordInput.trim()])
       setKeywordInput('')
     }
   }
 
   // 删除关键词
   const removeKeyword = (index: number) => {
-    const newKeywords = formData.keywords.filter((_, i) => i !== index)
-    handleInputChange('keywords', newKeywords)
+    setKeywords(keywords.filter((_, i) => i !== index))
+  }
+
+  // 添加机构
+  const addAffiliation = () => {
+    if (affiliationInput.trim() && !affiliations.includes(affiliationInput.trim())) {
+      setAffiliations([...affiliations, affiliationInput.trim()])
+      setAffiliationInput('')
+    }
+  }
+
+  // 删除机构
+  const removeAffiliation = (index: number) => {
+    setAffiliations(affiliations.filter((_, i) => i !== index))
   }
 
   // 处理表单提交
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
+  const handleSubmit = async (values: Record<string, unknown>) => {
+    // 验证作者
+    if (authors.length === 0) {
+      message.error('至少需要一个作者')
       return
     }
 
     setIsSubmitting(true)
     try {
       const submitData: Partial<Publication> = {
-        title: formData.title.trim(),
-        authors: formData.authors,
-        journal: formData.journal.trim() || undefined,
-        conference: formData.conference.trim() || undefined,
-        year: formData.year,
-        volume: formData.volume.trim() || undefined,
-        issue: formData.issue.trim() || undefined,
-        pages: formData.pages.trim() || undefined,
-        publisher: formData.publisher.trim() || undefined,
-        doi: formData.doi.trim() || undefined,
-        url: formData.url.trim() || undefined,
-        abstract: formData.abstract.trim() || undefined,
-        keywords: formData.keywords.length > 0 ? formData.keywords : undefined,
-        type: formData.type,
-        status: formData.status,
-        featured: formData.featured,
-        citationCount: formData.citationCount,
-        impactFactor: formData.impactFactor ? Number(formData.impactFactor) : undefined,
-        quartile: formData.quartile || undefined
+        title: values.title?.trim(),
+        abstract: values.abstract?.trim(),
+        type: values.type,
+        authors: authors,
+        affiliations: affiliations.length > 0 ? affiliations : undefined,
+        tags: tags.length > 0 ? tags : undefined,
+        keywords: keywords.length > 0 ? keywords : undefined,
+        journal: values.journal?.trim() || undefined,
+        conference: values.conference?.trim() || undefined,
+        publisher: values.publisher?.trim() || undefined,
+        volume: values.volume?.trim() || undefined,
+        issue: values.issue?.trim() || undefined,
+        pages: values.pages?.trim() || undefined,
+        year: values.year,
+        month: values.month?.trim() || undefined,
+        doi: values.doi?.trim() || undefined,
+        isbn: values.isbn?.trim() || undefined,
+        issn: values.issn?.trim() || undefined,
+        url: values.url?.trim() || undefined,
+        pdfUrl: values.pdfUrl?.trim() || undefined,
+        citationCount: values.citationCount || 0,
+        status: values.status,
+        visibility: values.visibility,
+        featured: values.featured,
+        openAccess: values.openAccess,
+        peerReviewed: values.peerReviewed,
+        publishDate: values.publishDate ? values.publishDate.toISOString() : undefined,
+        submissionDate: values.submissionDate ? values.submissionDate.toISOString() : undefined,
+        acceptanceDate: values.acceptanceDate ? values.acceptanceDate.toISOString() : undefined,
+        lastModified: new Date().toISOString(),
+        impactFactor: values.impactFactor || undefined,
+        quartile: values.quartile || undefined,
+        venue: values.venue?.trim() || undefined,
+        location: values.location?.trim() || undefined,
+        note: values.note?.trim() || undefined
       }
 
       await onSubmit(submitData)
     } catch (error) {
-      console.error('提交发表成果表单失败:', error)
+      console.error('提交出版物表单失败:', error)
+      message.error('提交失败，请重试')
     } finally {
       setIsSubmitting(false)
     }
@@ -238,515 +362,493 @@ const PublicationForm: React.FC<PublicationFormProps> = ({
   const isEditing = !!publication
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 基本信息 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 flex items-center">
-          <BookOpen className="h-5 w-5 mr-2" />
-          基本信息
-        </h3>
-        
-        {/* 标题 */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-            标题 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="title"
-            value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.title ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-            }`}
-            placeholder="请输入发表成果标题"
-            disabled={loading || isSubmitting}
-          />
-          {errors.title && (
-            <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-          )}
+    <Card title={isEditing ? '编辑出版物' : '添加出版物'} className="w-full">
+      {(loading || isSubmitting) && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+          <LoadingSpinner size="lg" />
         </div>
+      )}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        disabled={loading || isSubmitting}
+      >
+        {/* 基本信息 */}
+        <Card type="inner" title={<><FileText className="inline mr-2" size={16} />基本信息</>} className="mb-6">
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                label="出版物标题"
+                name="title"
+                rules={validationRules.title}
+              >
+                <Input 
+                  placeholder="请输入出版物标题" 
+                  showCount 
+                  maxLength={300}
+                  prefix={<FileText size={16} />}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                label="出版物类型"
+                name="type"
+                rules={[{ required: true, message: '请选择出版物类型' }]}
+              >
+                <Select placeholder="请选择出版物类型">
+                  <Option value="journal">期刊论文</Option>
+                  <Option value="conference">会议论文</Option>
+                  <Option value="book">书籍</Option>
+                  <Option value="chapter">书籍章节</Option>
+                  <Option value="thesis">学位论文</Option>
+                  <Option value="patent">专利</Option>
+                  <Option value="report">技术报告</Option>
+                  <Option value="preprint">预印本</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="发布状态"
+                name="status"
+                rules={[{ required: true, message: '请选择发布状态' }]}
+              >
+                <Select placeholder="请选择发布状态">
+                  <Option value="published">已发表</Option>
+                  <Option value="accepted">已接收</Option>
+                  <Option value="submitted">已投稿</Option>
+                  <Option value="in_review">审稿中</Option>
+                  <Option value="draft">草稿</Option>
+                  <Option value="rejected">被拒绝</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="可见性"
+                name="visibility"
+                rules={[{ required: true, message: '请选择可见性' }]}
+              >
+                <Select placeholder="请选择可见性">
+                  <Option value="public">公开</Option>
+                  <Option value="private">私有</Option>
+                  <Option value="internal">内部</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="featured" valuePropName="checked">
+                <Checkbox>特色出版物</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="openAccess" valuePropName="checked">
+                <Checkbox>开放获取</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="peerReviewed" valuePropName="checked">
+                <Checkbox>同行评议</Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        {/* 类型和状态 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-              类型
-            </label>
-            <select
-              id="type"
-              value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading || isSubmitting}
-            >
-              <option value="journal">期刊论文</option>
-              <option value="conference">会议论文</option>
-              <option value="book">书籍</option>
-              <option value="patent">专利</option>
-              <option value="thesis">学位论文</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-              状态
-            </label>
-            <select
-              id="status"
-              value={formData.status}
-              onChange={(e) => handleInputChange('status', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading || isSubmitting}
-            >
-              <option value="published">已发表</option>
-              <option value="accepted">已接收</option>
-              <option value="submitted">已投稿</option>
-              <option value="draft">草稿</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
-              年份 <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Calendar className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="number"
-                id="year"
-                value={formData.year}
-                onChange={(e) => handleInputChange('year', parseInt(e.target.value) || new Date().getFullYear())}
-                className={`w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.year ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-                }`}
-                min="1900"
-                max={new Date().getFullYear() + 5}
-                disabled={loading || isSubmitting}
-              />
-            </div>
-            {errors.year && (
-              <p className="mt-1 text-sm text-red-600">{errors.year}</p>
-            )}
-          </div>
-        </div>
-
-        {/* 作者 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            作者 <span className="text-red-500">*</span>
-          </label>
-          <div className="flex space-x-2 mb-2">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Users className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
+        {/* 作者和机构信息 */}
+        <Card type="inner" title={<><Users className="inline mr-2" size={16} />作者和机构信息</>} className="mb-6">
+          <Form.Item label="作者" required>
+            <Space.Compact style={{ display: 'flex' }}>
+              <Input
                 value={authorInput}
                 onChange={(e) => setAuthorInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onPressEnter={addAuthor}
                 placeholder="输入作者姓名并按回车添加"
-                disabled={loading || isSubmitting}
+                prefix={<Users size={16} />}
+                style={{ flex: 1 }}
               />
-            </div>
-            <button
-              type="button"
-              onClick={addAuthor}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              disabled={loading || isSubmitting || !authorInput.trim()}
-            >
-              添加
-            </button>
-          </div>
-          {formData.authors.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {formData.authors.map((author, index) => (
-                <span
+              <Button 
+                type="primary" 
+                onClick={addAuthor}
+                disabled={!authorInput.trim()}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+          </Form.Item>
+          
+          {authors.length > 0 && (
+            <div className="mb-4">
+              {authors.map((author, index) => (
+                <Tag
                   key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  closable
+                  onClose={() => removeAuthor(index)}
+                  color="blue"
+                  className="mb-2"
                 >
                   {author}
-                  <button
-                    type="button"
-                    onClick={() => removeAuthor(index)}
-                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600"
-                    disabled={loading || isSubmitting}
-                  >
-                    ×
-                  </button>
-                </span>
+                </Tag>
               ))}
             </div>
           )}
-          {errors.authors && (
-            <p className="mt-1 text-sm text-red-600">{errors.authors}</p>
+          
+          {authors.length === 0 && (
+            <div className="text-red-500 text-sm">至少需要一个作者</div>
           )}
-        </div>
-      </div>
+          
+          <Form.Item label="机构">
+            <Space.Compact style={{ display: 'flex' }}>
+              <Input
+                value={affiliationInput}
+                onChange={(e) => setAffiliationInput(e.target.value)}
+                onPressEnter={addAffiliation}
+                placeholder="输入机构名称并按回车添加"
+                prefix={<Building size={16} />}
+                style={{ flex: 1 }}
+              />
+              <Button 
+                type="primary" 
+                onClick={addAffiliation}
+                disabled={!affiliationInput.trim()}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+          </Form.Item>
+          
+          {affiliations.length > 0 && (
+            <div className="mb-4">
+              {affiliations.map((affiliation, index) => (
+                <Tag
+                  key={index}
+                  closable
+                  onClose={() => removeAffiliation(index)}
+                  color="orange"
+                  className="mb-2"
+                >
+                  {affiliation}
+                </Tag>
+              ))}
+            </div>
+          )}
+        </Card>
 
-      {/* 发表信息 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">
-          发表信息
-        </h3>
-        
-        {/* 期刊/会议名称 */}
-        {formData.type === 'journal' && (
-          <div>
-            <label htmlFor="journal" className="block text-sm font-medium text-gray-700 mb-1">
-              期刊名称 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="journal"
-              value={formData.journal}
-              onChange={(e) => handleInputChange('journal', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.journal ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              placeholder="请输入期刊名称"
-              disabled={loading || isSubmitting}
+        {/* 摘要和关键词 */}
+        <Card type="inner" title={<><FileText className="inline mr-2" size={16} />摘要和关键词</>} className="mb-6">
+          <Form.Item
+            label="摘要"
+            name="abstract"
+            rules={validationRules.abstract}
+          >
+            <TextArea 
+              rows={6} 
+              placeholder="请输入出版物摘要（100-2000字符）" 
+              showCount 
+              maxLength={2000}
             />
-            {errors.journal && (
-              <p className="mt-1 text-sm text-red-600">{errors.journal}</p>
-            )}
-          </div>
-        )}
-
-        {formData.type === 'conference' && (
-          <div>
-            <label htmlFor="conference" className="block text-sm font-medium text-gray-700 mb-1">
-              会议名称 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="conference"
-              value={formData.conference}
-              onChange={(e) => handleInputChange('conference', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.conference ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              placeholder="请输入会议名称"
-              disabled={loading || isSubmitting}
-            />
-            {errors.conference && (
-              <p className="mt-1 text-sm text-red-600">{errors.conference}</p>
-            )}
-          </div>
-        )}
-
-        {(formData.type === 'book' || formData.type === 'thesis') && (
-          <div>
-            <label htmlFor="publisher" className="block text-sm font-medium text-gray-700 mb-1">
-              出版社 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="publisher"
-              value={formData.publisher}
-              onChange={(e) => handleInputChange('publisher', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.publisher ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              placeholder="请输入出版社名称"
-              disabled={loading || isSubmitting}
-            />
-            {errors.publisher && (
-              <p className="mt-1 text-sm text-red-600">{errors.publisher}</p>
-            )}
-          </div>
-        )}
-
-        {/* 卷期页码 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="volume" className="block text-sm font-medium text-gray-700 mb-1">
-              卷号
-            </label>
-            <input
-              type="text"
-              id="volume"
-              value={formData.volume}
-              onChange={(e) => handleInputChange('volume', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="卷号"
-              disabled={loading || isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="issue" className="block text-sm font-medium text-gray-700 mb-1">
-              期号
-            </label>
-            <input
-              type="text"
-              id="issue"
-              value={formData.issue}
-              onChange={(e) => handleInputChange('issue', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="期号"
-              disabled={loading || isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="pages" className="block text-sm font-medium text-gray-700 mb-1">
-              页码
-            </label>
-            <input
-              type="text"
-              id="pages"
-              value={formData.pages}
-              onChange={(e) => handleInputChange('pages', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="如：1-10"
-              disabled={loading || isSubmitting}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 链接和标识 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 flex items-center">
-          <Link className="h-5 w-5 mr-2" />
-          链接和标识
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* DOI */}
-          <div>
-            <label htmlFor="doi" className="block text-sm font-medium text-gray-700 mb-1">
-              DOI
-            </label>
-            <input
-              type="text"
-              id="doi"
-              value={formData.doi}
-              onChange={(e) => handleInputChange('doi', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.doi ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              placeholder="如：10.1000/example"
-              disabled={loading || isSubmitting}
-            />
-            {errors.doi && (
-              <p className="mt-1 text-sm text-red-600">{errors.doi}</p>
-            )}
-          </div>
-
-          {/* URL */}
-          <div>
-            <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
-              链接地址
-            </label>
-            <input
-              type="url"
-              id="url"
-              value={formData.url}
-              onChange={(e) => handleInputChange('url', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.url ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              placeholder="https://example.com"
-              disabled={loading || isSubmitting}
-            />
-            {errors.url && (
-              <p className="mt-1 text-sm text-red-600">{errors.url}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 质量指标 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">
-          质量指标
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 引用次数 */}
-          <div>
-            <label htmlFor="citationCount" className="block text-sm font-medium text-gray-700 mb-1">
-              引用次数
-            </label>
-            <input
-              type="number"
-              id="citationCount"
-              value={formData.citationCount}
-              onChange={(e) => handleInputChange('citationCount', parseInt(e.target.value) || 0)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.citationCount ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              min="0"
-              disabled={loading || isSubmitting}
-            />
-            {errors.citationCount && (
-              <p className="mt-1 text-sm text-red-600">{errors.citationCount}</p>
-            )}
-          </div>
-
-          {/* 影响因子 */}
-          <div>
-            <label htmlFor="impactFactor" className="block text-sm font-medium text-gray-700 mb-1">
-              影响因子
-            </label>
-            <input
-              type="number"
-              id="impactFactor"
-              value={formData.impactFactor}
-              onChange={(e) => handleInputChange('impactFactor', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.impactFactor ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-              }`}
-              step="0.001"
-              min="0"
-              placeholder="如：3.456"
-              disabled={loading || isSubmitting}
-            />
-            {errors.impactFactor && (
-              <p className="mt-1 text-sm text-red-600">{errors.impactFactor}</p>
-            )}
-          </div>
-
-          {/* 分区 */}
-          <div>
-            <label htmlFor="quartile" className="block text-sm font-medium text-gray-700 mb-1">
-              JCR分区
-            </label>
-            <select
-              id="quartile"
-              value={formData.quartile}
-              onChange={(e) => handleInputChange('quartile', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading || isSubmitting}
-            >
-              <option value="">请选择</option>
-              <option value="Q1">Q1</option>
-              <option value="Q2">Q2</option>
-              <option value="Q3">Q3</option>
-              <option value="Q4">Q4</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* 摘要和关键词 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 flex items-center">
-          <FileText className="h-5 w-5 mr-2" />
-          详细信息
-        </h3>
-        
-        {/* 摘要 */}
-        <div>
-          <label htmlFor="abstract" className="block text-sm font-medium text-gray-700 mb-1">
-            摘要
-          </label>
-          <textarea
-            id="abstract"
-            value={formData.abstract}
-            onChange={(e) => handleInputChange('abstract', e.target.value)}
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="请输入摘要"
-            disabled={loading || isSubmitting}
-          />
-        </div>
-
-        {/* 关键词 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            关键词
-          </label>
-          <div className="flex space-x-2 mb-2">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Tag className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
+          </Form.Item>
+          
+          <Form.Item label="关键词">
+            <Space.Compact style={{ display: 'flex' }}>
+              <Input
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onPressEnter={addKeyword}
                 placeholder="输入关键词并按回车添加"
-                disabled={loading || isSubmitting}
+                prefix={<TagIcon size={16} />}
+                style={{ flex: 1 }}
               />
-            </div>
-            <button
-              type="button"
-              onClick={addKeyword}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              disabled={loading || isSubmitting || !keywordInput.trim()}
-            >
-              添加
-            </button>
-          </div>
-          {formData.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {formData.keywords.map((keyword, index) => (
-                <span
+              <Button 
+                type="primary" 
+                onClick={addKeyword}
+                disabled={!keywordInput.trim()}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+          </Form.Item>
+          
+          {keywords.length > 0 && (
+            <div className="mb-4">
+              {keywords.map((keyword, index) => (
+                <Tag
                   key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                  closable
+                  onClose={() => removeKeyword(index)}
+                  color="green"
+                  className="mb-2"
                 >
                   {keyword}
-                  <button
-                    type="button"
-                    onClick={() => removeKeyword(index)}
-                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-green-400 hover:text-green-600"
-                    disabled={loading || isSubmitting}
-                  >
-                    ×
-                  </button>
-                </span>
+                </Tag>
               ))}
             </div>
           )}
-        </div>
-
-        {/* 特色标记 */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="featured"
-            checked={formData.featured}
-            onChange={(e) => handleInputChange('featured', e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            disabled={loading || isSubmitting}
-          />
-          <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-            设为特色成果
-          </label>
-        </div>
-      </div>
-
-      {/* 操作按钮 */}
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          disabled={loading || isSubmitting}
-        >
-          取消
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          disabled={loading || isSubmitting}
-        >
-          {(loading || isSubmitting) && (
-            <LoadingSpinner size="sm" className="mr-2" />
+          
+          <Form.Item label="标签">
+            <Space.Compact style={{ display: 'flex' }}>
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onPressEnter={addTag}
+                placeholder="输入标签并按回车添加"
+                prefix={<TagIcon size={16} />}
+                style={{ flex: 1 }}
+              />
+              <Button 
+                type="primary" 
+                onClick={addTag}
+                disabled={!tagInput.trim()}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+          </Form.Item>
+          
+          {tags.length > 0 && (
+            <div className="mb-4">
+              {tags.map((tag, index) => (
+                <Tag
+                  key={index}
+                  closable
+                  onClose={() => removeTag(index)}
+                  color="purple"
+                  className="mb-2"
+                >
+                  {tag}
+                </Tag>
+              ))}
+            </div>
           )}
-          {isEditing ? '更新成果' : '添加成果'}
-        </button>
-      </div>
-    </form>
+        </Card>
+
+        {/* 出版信息 */}
+        <Card type="inner" title={<><BookOpen className="inline mr-2" size={16} />出版信息</>} className="mb-6">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="期刊" name="journal">
+                <Input placeholder="期刊名称" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="会议" name="conference">
+                <Input placeholder="会议名称" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="出版商" name="publisher">
+                <Input placeholder="出版商名称" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="会议地点" name="venue">
+                <Input placeholder="会议举办地点" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="位置" name="location">
+                <Input placeholder="具体位置" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item label="卷号" name="volume">
+                <Input placeholder="卷号" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="期号" name="issue">
+                <Input placeholder="期号" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="页码" name="pages">
+                <Input placeholder="1-10" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item 
+                label="年份" 
+                name="year"
+                rules={validationRules.year}
+              >
+                <InputNumber 
+                  min={1900} 
+                  max={new Date().getFullYear() + 5} 
+                  className="w-full" 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="月份" name="month">
+                <Select placeholder="选择月份">
+                  <Option value="January">一月</Option>
+                  <Option value="February">二月</Option>
+                  <Option value="March">三月</Option>
+                  <Option value="April">四月</Option>
+                  <Option value="May">五月</Option>
+                  <Option value="June">六月</Option>
+                  <Option value="July">七月</Option>
+                  <Option value="August">八月</Option>
+                  <Option value="September">九月</Option>
+                  <Option value="October">十月</Option>
+                  <Option value="November">十一月</Option>
+                  <Option value="December">十二月</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item 
+                label="影响因子" 
+                name="impactFactor"
+                rules={validationRules.impactFactor}
+              >
+                <InputNumber 
+                  min={0} 
+                  max={100} 
+                  step={0.001} 
+                  precision={3}
+                  className="w-full" 
+                  prefix={<Award size={16} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="期刊分区" name="quartile">
+                <Select placeholder="选择期刊分区">
+                  <Option value="Q1">Q1</Option>
+                  <Option value="Q2">Q2</Option>
+                  <Option value="Q3">Q3</Option>
+                  <Option value="Q4">Q4</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 标识符和链接 */}
+        <Card type="inner" title={<><Link className="inline mr-2" size={16} />标识符和链接</>} className="mb-6">
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item 
+                label="DOI" 
+                name="doi"
+                rules={validationRules.doi}
+              >
+                <Input placeholder="10.1000/182" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item 
+                label="ISBN" 
+                name="isbn"
+                rules={validationRules.isbn}
+              >
+                <Input placeholder="978-3-16-148410-0" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item 
+                label="ISSN" 
+                name="issn"
+                rules={validationRules.issn}
+              >
+                <Input placeholder="1234-5678" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item 
+                label="URL链接" 
+                name="url"
+                rules={validationRules.url}
+              >
+                <Input placeholder="https://example.com" prefix={<Link size={16} />} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item 
+                label="PDF链接" 
+                name="pdfUrl"
+                rules={validationRules.pdfUrl}
+              >
+                <Input placeholder="https://example.com/paper.pdf" prefix={<FileText size={16} />} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 时间信息 */}
+        <Card type="inner" title={<><Calendar className="inline mr-2" size={16} />时间信息</>} className="mb-6">
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="发表时间" name="publishDate">
+                <DatePicker className="w-full" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="投稿时间" name="submissionDate">
+                <DatePicker className="w-full" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="接收时间" name="acceptanceDate">
+                <DatePicker className="w-full" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 统计信息 */}
+        <Card type="inner" title={<><Eye className="inline mr-2" size={16} />统计信息</>} className="mb-6">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="引用次数" name="citationCount">
+                <InputNumber min={0} className="w-full" prefix={<Award size={16} />} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="备注" name="note">
+                <TextArea rows={3} placeholder="其他备注信息" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 操作按钮 */}
+        <Form.Item>
+          <Space>
+            <Button onClick={onCancel} disabled={loading || isSubmitting}>
+              取消
+            </Button>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={loading || isSubmitting}
+            >
+              {isEditing ? '更新出版物' : '添加出版物'}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Card>
   )
 }
 

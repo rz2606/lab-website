@@ -43,8 +43,10 @@ const TeamTab: React.FC<TeamTabProps> = ({ className = '' }) => {
   const [filterType, setFilterType] = useState<string>('')
   const [filterDepartment, setFilterDepartment] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
-  const [sortField, setSortField] = useState<keyof TeamMember>('joinDate')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // 排序状态 (暂时注释，未来可能需要)
+  // const [sortField, setSortField] = useState<keyof TeamMember>('createdAt')
+  // const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   
   // 模态框状态
@@ -86,28 +88,8 @@ const TeamTab: React.FC<TeamTabProps> = ({ className = '' }) => {
       return matchesSearch && matchesType && matchesDepartment && matchesStatus
     })
 
-    // 排序
-    filtered.sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
-      
-      if (aValue === undefined || aValue === null) return 1
-      if (bValue === undefined || bValue === null) return -1
-      
-      let comparison = 0
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue)
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        comparison = aValue.getTime() - bValue.getTime()
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue))
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-
     return filtered
-  }, [teamMembers, searchTerm, filterType, filterDepartment, filterStatus, sortField, sortDirection])
+  }, [teamMembers, searchTerm, filterType, filterDepartment, filterStatus])
 
   // 计算分页数据
   const paginatedData = React.useMemo(() => {
@@ -128,28 +110,28 @@ const TeamTab: React.FC<TeamTabProps> = ({ className = '' }) => {
   }
 
   // 处理排序
-  const handleSort = (field: keyof TeamMember) => {
-    if (field === sortField) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // const handleSort = (field: keyof TeamMember) => {
+  //   if (field === sortField) {
+  //     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortField(field)
+  //     setSortDirection('asc')
+  //   }
+  // }
 
   // 处理成员选择
-  const handleMemberSelect = (memberId: string, selected: boolean) => {
-    setSelectedMembers(prev => 
-      selected 
-        ? [...prev, memberId]
-        : prev.filter(id => id !== memberId)
-    )
-  }
+  // const handleMemberSelect = (memberId: string, selected: boolean) => {
+  //   setSelectedMembers(prev => 
+  //     selected 
+  //       ? [...prev, memberId]
+  //       : prev.filter(id => id !== memberId)
+  //   )
+  // }
 
   // 处理全选
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedMembers(selected ? paginatedData.map(member => member.id) : [])
-  }
+  // const handleSelectAll = (selected: boolean) => {
+  //   setSelectedMembers(selected ? paginatedData.map(member => member.id) : [])
+  // }
 
   // 打开新增成员模态框
   const handleAddMember = () => {

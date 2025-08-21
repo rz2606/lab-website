@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { Edit, Trash2, Calendar, User, Newspaper, ExternalLink } from 'lucide-react'
 import type { News, PaginationInfo } from '@/types/admin'
 import { TableLoadingRow } from '../common/LoadingSpinner'
@@ -199,9 +200,11 @@ const NewsTable: React.FC<NewsTableProps> = ({
                       {renderTags(newsItem.tags)}
                       {newsItem.imageUrl && (
                         <div className="mt-2">
-                          <img
+                          <Image
                             src={newsItem.imageUrl}
                             alt={newsItem.title}
+                            width={80}
+                            height={48}
                             className="h-12 w-20 object-cover rounded border"
                           />
                         </div>

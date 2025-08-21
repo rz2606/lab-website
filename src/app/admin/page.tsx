@@ -91,7 +91,7 @@ const SettingsTab: React.FC = () => {
 function AdminPage() {
   const router = useRouter()
   const [authChecked, setAuthChecked] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string; role: string } | null>(null)
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
 
@@ -119,7 +119,7 @@ function AdminPage() {
     }
 
     checkAuth()
-  }, [])
+  }, [router])
 
   // 退出登录
   const handleLogout = () => {

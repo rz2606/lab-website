@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Calendar, Pin, ArrowRight } from 'lucide-react'
+import { Calendar, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -138,7 +138,7 @@ function NewsCard({ news, index }: NewsCardProps) {
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), index * 100)
     return () => clearTimeout(timer)
-  }, [])
+  }, [index])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

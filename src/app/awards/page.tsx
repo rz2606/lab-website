@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Award, Upload, Search, Calendar, User, Trophy, FileText, Plus } from 'lucide-react'
+import { Award, Upload, Search, Calendar, User, Trophy, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,7 +25,13 @@ const AwardsPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
-  const [importResult, setImportResult] = useState<any>(null)
+  const [importResult, setImportResult] = useState<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    errors?: string[];
+    details?: string[];
+  } | null>(null)
   const [showImportForm, setShowImportForm] = useState(false)
 
   // 获取获奖记录

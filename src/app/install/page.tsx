@@ -118,6 +118,7 @@ export default function InstallPage() {
         setError(result.error || '数据库连接失败')
       }
     } catch (err) {
+      console.error('数据库连接测试失败:', err)
       setError('网络错误，请检查服务器状态')
     } finally {
       setLoading(false)

@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { Edit, Trash2, User, GraduationCap, Briefcase, Award } from 'lucide-react'
 import type { TeamMember, PaginationInfo } from '@/types/admin'
 import { TableLoadingRow } from '../common/LoadingSpinner'
@@ -170,20 +171,23 @@ const TeamTable: React.FC<TeamTableProps> = ({
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         {member.photo ? (
-                          <img
+                          <Image
                             className="h-10 w-10 rounded-full object-cover"
                             src={member.photo}
                             alt={member.name}
+                            width={40}
+                            height={40}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement
                               target.style.display = 'none'
                               target.nextElementSibling?.classList.remove('hidden')
                             }}
                           />
-                        ) : null}
-                        <div className={`h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center ${member.photo ? 'hidden' : ''}`}>
-                          <User className="h-6 w-6 text-gray-600" />
-                        </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <User className="h-6 w-6 text-gray-600" />
+                          </div>
+                        )}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">

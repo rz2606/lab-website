@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getCurrentUserId } from '@/lib/auth-middleware'
+import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
 
 // Excel导入获奖数据
@@ -9,7 +8,7 @@ export async function POST(request: NextRequest) {
     // 查询数据库中是否存在用户，如果存在则使用第一个用户的ID
     let currentUserId: number | null = null
     try {
-      const firstUser = await db.user.findFirst({
+      const firstUser = await prisma.user.findFirst({
         select: { id: true }
       })
       currentUserId = firstUser?.id || null
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // 验证Excel表头
     const requiredHeaders = ['序号', '获奖人员', '获奖时间', '获奖名称及等级', '指导老师']
-    const firstRow = jsonData[0] as any
+    const firstRow = jsonData[0] as Record<string, unknown>
     const headers = Object.keys(firstRow)
     
     const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
     const errors = []
 
     for (let i = 0; i < jsonData.length; i++) {
-      const row = jsonData[i] as any
+      const row = jsonData[i] as Record<string, unknown>
       
       try {
         // 验证必填字段
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 处理日期字段 - 直接存储原始字符串格式
-        const parseDate = (dateValue: any) => {
+        const parseDate = (dateValue: unknown) => {
           if (!dateValue) return null
           
           // 直接返回字符串格式，保持原始数据
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
     console.log('准备插入的数据数量:', awardsData.length)
     console.log('插入数据示例:', awardsData[0])
     
-    const result = await db.award.createMany({
+    const result = await prisma.award.createMany({
       data: awardsData
       // 移除 skipDuplicates 以确保数据能够插入
     })

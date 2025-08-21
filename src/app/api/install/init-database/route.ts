@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import path from 'path'
 
 const execAsync = promisify(exec)
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const projectRoot = process.cwd()
     
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
     try {
       // 生成Prisma客户端
       console.log('生成Prisma客户端...')
-      const { stdout: generateStdout, stderr: generateStderr } = await execAsync(
+      const { stderr: generateStderr } = await execAsync(
         'npx prisma generate',
         { cwd: projectRoot }
       )
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
       
       // 推送数据库架构
       console.log('推送数据库架构...')
-      const { stdout: pushStdout, stderr: pushStderr } = await execAsync(
+      const { stderr: pushStderr } = await execAsync(
         'npx prisma db push --force-reset',
         { cwd: projectRoot }
       )
@@ -42,7 +41,7 @@ export async function POST(request: NextRequest) {
       // 运行数据库种子（如果存在）
       try {
         console.log('运行数据库种子...')
-        const { stdout: seedStdout, stderr: seedStderr } = await execAsync(
+        const { stderr: seedStderr } = await execAsync(
           'npx prisma db seed',
           { cwd: projectRoot }
         )
@@ -52,14 +51,14 @@ export async function POST(request: NextRequest) {
         }
         
         console.log('数据库种子运行完成')
-      } catch (seedError: any) {
-        // 种子文件可能不存在，这是正常的
-        console.log('没有找到种子文件，跳过种子步骤')
-      }
+      } catch {
+         // 种子文件可能不存在，这是正常的
+         console.log('没有找到种子文件，跳过种子步骤')
+       }
       
-    } catch (prismaError: any) {
+    } catch (prismaError: unknown) {
       console.error('Prisma操作失败:', prismaError)
-      throw new Error(`数据库初始化失败: ${prismaError.message}`)
+      throw new Error(`数据库初始化失败: ${prismaError instanceof Error ? prismaError.message : String(prismaError)}`)
     }
     
     return NextResponse.json(
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('数据库初始化失败:', error)
     
     let errorMessage = '数据库初始化失败'
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
       errorMessage = '数据库访问被拒绝，请检查用户名和密码'
     } else if (error.message.includes('Unknown database')) {
       errorMessage = '数据库连接失败，请检查数据库配置是否正确'
-    } else if (error.message) {
+    } else if (error instanceof Error && error.message) {
       errorMessage = error.message
     }
     
