@@ -120,6 +120,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 验证用户是否存在
+    const userExists = await prisma.user.findUnique({
+      where: { id: authResult.user!.userId }
+    })
+
     // 先将所有现有配置设为非活跃状态
     await prisma.footer.updateMany({
       where: {
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
       },
       data: {
         isActive: false,
-        updatedBy: authResult.user!.userId
+        updatedBy: userExists ? authResult.user!.userId : null
       }
     })
 
@@ -141,10 +146,10 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         address,
-        links: links ? JSON.stringify(links) : null,
+        links: links ? (typeof links === 'string' ? links : JSON.stringify(links)) : null,
         isActive: true,
-        createdBy: authResult.user!.userId,
-        updatedBy: authResult.user!.userId
+        createdBy: userExists ? authResult.user!.userId : null,
+        updatedBy: userExists ? authResult.user!.userId : null
       }
     })
 
@@ -195,6 +200,11 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // 验证用户是否存在
+    const userExists = await prisma.user.findUnique({
+      where: { id: authResult.user!.userId }
+    })
+
     // 更新页脚配置
     const footer = await prisma.footer.update({
       where: {
@@ -208,8 +218,8 @@ export async function PUT(request: NextRequest) {
         email,
         phone,
         address,
-        links: links ? JSON.stringify(links) : null,
-        updatedBy: authResult.user!.userId
+        links: links ? (typeof links === 'string' ? links : JSON.stringify(links)) : null,
+        updatedBy: userExists ? authResult.user!.userId : null
       }
     })
 

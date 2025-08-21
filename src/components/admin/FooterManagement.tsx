@@ -23,7 +23,7 @@ interface FooterConfig {
   email?: string
   phone?: string
   address?: string
-  links?: FooterLink[]
+  links?: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -57,17 +57,31 @@ const FooterManagement: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json()
-        if (data.footer) {
-          setFooterConfig(data.footer)
+        if (data.data) {
+          setFooterConfig(data.data)
+          // 处理links字段的双重JSON编码问题
+          let links = []
+          if (data.data.links) {
+            try {
+              // 如果links是字符串，先解析一次
+              const parsedLinks = typeof data.data.links === 'string' ? JSON.parse(data.data.links) : data.data.links
+              // 如果解析后还是字符串，再解析一次
+              links = typeof parsedLinks === 'string' ? JSON.parse(parsedLinks) : parsedLinks
+            } catch (e) {
+              console.error('解析links字段失败:', e)
+              links = []
+            }
+          }
+          
           setFormData({
-            title: data.footer.title || '',
-            description: data.footer.description || '',
-            copyright: data.footer.copyright || '',
-            icp: data.footer.icp || '',
-            email: data.footer.email || '',
-            phone: data.footer.phone || '',
-            address: data.footer.address || '',
-            links: data.footer.links ? JSON.parse(data.footer.links) : []
+            title: data.data.title || '',
+            description: data.data.description || '',
+            copyright: data.data.copyright || '',
+            icp: data.data.icp || '',
+            email: data.data.email || '',
+            phone: data.data.phone || '',
+            address: data.data.address || '',
+            links: links
           })
         }
       } else {
@@ -105,7 +119,7 @@ const FooterManagement: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData,
-          links: JSON.stringify(formData.links)
+          links: formData.links
         })
       })
 

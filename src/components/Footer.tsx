@@ -32,12 +32,14 @@ const Footer = () => {
         const response = await fetch('/api/footer')
         if (response.ok) {
           const data = await response.json()
-          if (data.footer) {
-            const config = data.footer
+          if (data.data) {
+            const config = data.data
             // 解析links字段
             if (config.links) {
               try {
-                config.links = JSON.parse(config.links)
+                // 处理双重JSON编码问题
+                const parsedLinks = typeof config.links === 'string' ? JSON.parse(config.links) : config.links
+                config.links = typeof parsedLinks === 'string' ? JSON.parse(parsedLinks) : parsedLinks
               } catch {
                 config.links = []
               }
