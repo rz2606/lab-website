@@ -13,6 +13,7 @@ import ToolsTab from '@/components/admin/tabs/ToolsTab'
 import NewsTab from '@/components/admin/tabs/NewsTab'
 import AchievementsTab from '@/components/admin/tabs/AchievementsTab'
 import FooterManagement from '@/components/admin/FooterManagement'
+import ContactManagement from '@/components/admin/ContactManagement'
 
 // 导入通用组件
 import ErrorBoundary from '@/components/admin/common/ErrorBoundary'
@@ -302,7 +303,8 @@ function AdminPage() {
         return <NewsTab />
       case 'achievements':
         return <AchievementsTab />
-
+      case 'contacts':
+        return <ContactManagement />
       case 'analytics':
         return <AnalyticsTab />
       case 'settings':

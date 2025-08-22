@@ -15,6 +15,7 @@ const Navigation = () => {
     { name: '程序开发', href: '/tools' },
     { name: '获奖名单', href: '/awards' },
     { name: '新闻动态', href: '/news' },
+    { name: '联系我们', href: '/contact' },
   ]
 
   return (

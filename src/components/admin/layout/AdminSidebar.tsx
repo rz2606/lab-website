@@ -12,7 +12,8 @@ import {
   ChevronDown,
   ChevronRight,
   Award,
-  BookOpen
+  BookOpen,
+  MessageSquare
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -77,6 +78,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       id: 'news',
       label: '新闻管理',
       icon: Newspaper,
+      badge: ''
+    },
+    {
+      id: 'contacts',
+      label: '联系记录',
+      icon: MessageSquare,
       badge: ''
     },
     {

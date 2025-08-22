@@ -233,6 +233,7 @@ model User {
   updatedArticles     Article[]     @relation("ArticleUpdatedBy")
   createdFooters      Footer[]      @relation("FooterCreatedBy")
   updatedFooters      Footer[]      @relation("FooterUpdatedBy")
+  processedContacts   Contact[]     @relation("ContactProcessedBy")
 
   @@map("users")
 }
@@ -259,4 +260,25 @@ model Footer {
   updater     User?    @relation("FooterUpdatedBy", fields: [updatedBy], references: [id])
 
   @@map("footers")
+}
+
+// 联系我们记录
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String?  // 联系人姓名
+  phone     String?  // 联系电话
+  email     String?  // 联系邮箱
+  reason    String   @db.Text // 联系理由
+  ipAddress String   // IP地址
+  userAgent String?  @db.Text // 用户代理
+  status    String   @default("pending") // 状态：pending, processed, closed
+  adminNote String?  @db.Text // 管理员备注
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  processedBy Int?   // 处理人
+  
+  // 关联关系
+  processor User?    @relation("ContactProcessedBy", fields: [processedBy], references: [id])
+
+  @@map("contacts")
 }
