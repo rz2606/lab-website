@@ -10,13 +10,7 @@ const nextConfig = {
     // 在构建时忽略 TypeScript 错误
     ignoreBuildErrors: true,
   },
-<<<<<<< HEAD
-  experimental: {
-    outputFileTracingRoot: undefined,
-  },
-=======
 
->>>>>>> upstream/main
   images: {
     remotePatterns: [
       {
