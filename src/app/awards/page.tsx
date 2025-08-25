@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Award, Upload, Search, Calendar, User, Trophy, FileText } from 'lucide-react'
+import { Award, Upload, Search, Calendar, User, Trophy, FileText, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,13 +25,7 @@ const AwardsPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
-  const [importResult, setImportResult] = useState<{
-    success: boolean;
-    message?: string;
-    error?: string;
-    errors?: string[];
-    details?: string[];
-  } | null>(null)
+  const [importResult, setImportResult] = useState<any>(null)
   const [showImportForm, setShowImportForm] = useState(false)
 
   // 获取获奖记录
@@ -41,15 +35,12 @@ const AwardsPage = () => {
       const response = await fetch('/api/awards')
       if (response.ok) {
         const data = await response.json()
-        // 处理分页数据格式，确保awards是数组
-        const awardsData = data.data || data
-        setAwards(Array.isArray(awardsData) ? awardsData : [])
+        setAwards(data)
       } else {
         console.error('获取获奖记录失败')
       }
     } catch (error) {
       console.error('获取获奖记录失败:', error)
-      setAwards([]) // 确保在错误情况下awards是空数组
     } finally {
       setLoading(false)
     }
