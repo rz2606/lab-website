@@ -1,0 +1,1110 @@
+import React, { useState, useEffect } from 'react'
+import { FileText, Calendar, Users, Tag, Link, Eye, Clock, Image, BookOpen } from 'lucide-react'
+import type { Article } from '@/types/admin'
+import LoadingSpinner from '../common/LoadingSpinner'
+import FormField from '../common/FormField'
+
+interface ArticleFormProps {
+  article?: Article | null
+  onSubmit: (articleData: Partial<Article>) => Promise<void>
+  onCancel: () => void
+  loading?: boolean
+}
+
+const ArticleForm: React.FC<ArticleFormProps> = ({
+  article,
+  onSubmit,
+  onCancel,
+  loading = false
+}) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    summary: '',
+    type: 'research' as 'research' | 'tutorial' | 'review' | 'opinion' | 'news' | 'technical',
+    authors: [] as string[],
+    authorIds: [] as string[],
+    tags: [] as string[],
+    category: '',
+    featuredImage: '',
+    images: [] as string[],
+    externalUrl: '',
+    doi: '',
+    status: 'draft' as 'draft' | 'published' | 'archived' | 'under_review',
+    visibility: 'public' as 'public' | 'private' | 'internal',
+    featured: false,
+    allowComments: true,
+    viewCount: 0,
+    readingTime: 0,
+    publishDate: '',
+    lastModified: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: [] as string[],
+    relatedArticles: [] as string[],
+    references: [] as { title: string; url: string; authors?: string }[],
+    tableOfContents: [] as { level: number; title: string; anchor: string }[]
+  })
+  
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [authorInput, setAuthorInput] = useState('')
+  const [tagInput, setTagInput] = useState('')
+  const [imageInput, setImageInput] = useState('')
+  const [seoKeywordInput, setSeoKeywordInput] = useState('')
+  const [referenceTitle, setReferenceTitle] = useState('')
+  const [referenceUrl, setReferenceUrl] = useState('')
+  const [referenceAuthors, setReferenceAuthors] = useState('')
+  const [tocTitle, setTocTitle] = useState('')
+  const [tocLevel, setTocLevel] = useState(1)
+
+  // 初始化表单数据
+  useEffect(() => {
+    if (article) {
+      setFormData({
+        title: article.title || '',
+        content: article.content || '',
+        summary: article.summary || '',
+        type: article.type || 'research',
+        authors: article.authors || [],
+        authorIds: article.authorIds || [],
+        tags: article.tags || [],
+        category: article.category || '',
+        featuredImage: article.featuredImage || '',
+        images: article.images || [],
+        externalUrl: article.externalUrl || '',
+        doi: article.doi || '',
+        status: article.status || 'draft',
+        visibility: article.visibility || 'public',
+        featured: article.featured || false,
+        allowComments: article.allowComments !== false,
+        viewCount: article.viewCount || 0,
+        readingTime: article.readingTime || 0,
+        publishDate: article.publishDate ? new Date(article.publishDate).toISOString().split('T')[0] : '',
+        lastModified: article.lastModified ? new Date(article.lastModified).toISOString().split('T')[0] : '',
+        seoTitle: article.seoTitle || '',
+        seoDescription: article.seoDescription || '',
+        seoKeywords: article.seoKeywords || [],
+        relatedArticles: article.relatedArticles || [],
+        references: article.references || [],
+        tableOfContents: article.tableOfContents || []
+      })
+    } else {
+      setFormData({
+        title: '',
+        content: '',
+        summary: '',
+        type: 'research',
+        authors: [],
+        authorIds: [],
+        tags: [],
+        category: '',
+        featuredImage: '',
+        images: [],
+        externalUrl: '',
+        doi: '',
+        status: 'draft',
+        visibility: 'public',
+        featured: false,
+        allowComments: true,
+        viewCount: 0,
+        readingTime: 0,
+        publishDate: new Date().toISOString().split('T')[0],
+        lastModified: '',
+        seoTitle: '',
+        seoDescription: '',
+        seoKeywords: [],
+        relatedArticles: [],
+        references: [],
+        tableOfContents: []
+      })
+    }
+    setErrors({})
+  }, [article])
+
+  // 表单验证
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    // 标题验证
+    if (!formData.title.trim()) {
+      newErrors.title = '文章标题不能为空'
+    } else if (formData.title.length < 5) {
+      newErrors.title = '文章标题至少需要5个字符'
+    } else if (formData.title.length > 200) {
+      newErrors.title = '文章标题不能超过200个字符'
+    }
+
+    // 内容验证
+    if (!formData.content.trim()) {
+      newErrors.content = '文章内容不能为空'
+    } else if (formData.content.length < 100) {
+      newErrors.content = '文章内容至少需要100个字符'
+    }
+
+    // 摘要验证
+    if (!formData.summary.trim()) {
+      newErrors.summary = '文章摘要不能为空'
+    } else if (formData.summary.length < 50) {
+      newErrors.summary = '文章摘要至少需要50个字符'
+    } else if (formData.summary.length > 1000) {
+      newErrors.summary = '文章摘要不能超过1000个字符'
+    }
+
+    // 作者验证
+    if (formData.authors.length === 0) {
+      newErrors.authors = '至少需要一个作者'
+    }
+
+    // 分类验证
+    if (!formData.category.trim()) {
+      newErrors.category = '文章分类不能为空'
+    }
+
+    // URL验证
+    const urlFields = ['featuredImage', 'externalUrl']
+    urlFields.forEach(field => {
+      const value = formData[field as keyof typeof formData] as string
+      if (value && !isValidUrl(value)) {
+        newErrors[field] = '请输入有效的URL地址'
+      }
+    })
+
+    // DOI验证
+    if (formData.doi && !isValidDoi(formData.doi)) {
+      newErrors.doi = '请输入有效的DOI格式'
+    }
+
+    // 图片URL验证
+    formData.images.forEach((url, index) => {
+      if (!isValidUrl(url)) {
+        newErrors[`image_${index}`] = `图片${index + 1}的URL格式无效`
+      }
+    })
+
+    // 参考文献验证
+    formData.references.forEach((ref, index) => {
+      if (!ref.title.trim()) {
+        newErrors[`ref_title_${index}`] = `参考文献${index + 1}的标题不能为空`
+      }
+      if (!isValidUrl(ref.url)) {
+        newErrors[`ref_url_${index}`] = `参考文献${index + 1}的URL格式无效`
+      }
+    })
+
+    // 统计数据验证
+    if (formData.viewCount < 0) {
+      newErrors.viewCount = '浏览次数不能为负数'
+    }
+    if (formData.readingTime < 0) {
+      newErrors.readingTime = '阅读时间不能为负数'
+    }
+
+    // SEO验证
+    if (formData.seoTitle && formData.seoTitle.length > 60) {
+      newErrors.seoTitle = 'SEO标题不能超过60个字符'
+    }
+    if (formData.seoDescription && formData.seoDescription.length > 160) {
+      newErrors.seoDescription = 'SEO描述不能超过160个字符'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // URL验证函数
+  const isValidUrl = (url: string) => {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // DOI验证函数
+  const isValidDoi = (doi: string) => {
+    const doiPattern = /^10\.\d{4,}\/.+/
+    return doiPattern.test(doi)
+  }
+
+  // 处理输入变化
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    // 清除对应字段的错误
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
+
+  // 添加作者
+  const addAuthor = () => {
+    if (authorInput.trim() && !formData.authors.includes(authorInput.trim())) {
+      handleInputChange('authors', [...formData.authors, authorInput.trim()])
+      setAuthorInput('')
+    }
+  }
+
+  // 删除作者
+  const removeAuthor = (index: number) => {
+    const newAuthors = formData.authors.filter((_, i) => i !== index)
+    handleInputChange('authors', newAuthors)
+  }
+
+  // 添加标签
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      handleInputChange('tags', [...formData.tags, tagInput.trim()])
+      setTagInput('')
+    }
+  }
+
+  // 删除标签
+  const removeTag = (index: number) => {
+    const newTags = formData.tags.filter((_, i) => i !== index)
+    handleInputChange('tags', newTags)
+  }
+
+  // 添加图片
+  const addImage = () => {
+    if (imageInput.trim() && isValidUrl(imageInput.trim()) && !formData.images.includes(imageInput.trim())) {
+      handleInputChange('images', [...formData.images, imageInput.trim()])
+      setImageInput('')
+    }
+  }
+
+  // 删除图片
+  const removeImage = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index)
+    handleInputChange('images', newImages)
+  }
+
+  // 添加SEO关键词
+  const addSeoKeyword = () => {
+    if (seoKeywordInput.trim() && !formData.seoKeywords.includes(seoKeywordInput.trim())) {
+      handleInputChange('seoKeywords', [...formData.seoKeywords, seoKeywordInput.trim()])
+      setSeoKeywordInput('')
+    }
+  }
+
+  // 删除SEO关键词
+  const removeSeoKeyword = (index: number) => {
+    const newKeywords = formData.seoKeywords.filter((_, i) => i !== index)
+    handleInputChange('seoKeywords', newKeywords)
+  }
+
+  // 添加参考文献
+  const addReference = () => {
+    if (referenceTitle.trim() && referenceUrl.trim() && isValidUrl(referenceUrl.trim())) {
+      const newRef = {
+        title: referenceTitle.trim(),
+        url: referenceUrl.trim(),
+        authors: referenceAuthors.trim() || undefined
+      }
+      handleInputChange('references', [...formData.references, newRef])
+      setReferenceTitle('')
+      setReferenceUrl('')
+      setReferenceAuthors('')
+    }
+  }
+
+  // 删除参考文献
+  const removeReference = (index: number) => {
+    const newReferences = formData.references.filter((_, i) => i !== index)
+    handleInputChange('references', newReferences)
+  }
+
+  // 添加目录项
+  const addTocItem = () => {
+    if (tocTitle.trim()) {
+      const anchor = tocTitle.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      const newTocItem = {
+        level: tocLevel,
+        title: tocTitle.trim(),
+        anchor
+      }
+      handleInputChange('tableOfContents', [...formData.tableOfContents, newTocItem])
+      setTocTitle('')
+    }
+  }
+
+  // 删除目录项
+  const removeTocItem = (index: number) => {
+    const newToc = formData.tableOfContents.filter((_, i) => i !== index)
+    handleInputChange('tableOfContents', newToc)
+  }
+
+  // 处理表单提交
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const submitData: Partial<Article> = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        summary: formData.summary.trim(),
+        type: formData.type,
+        authors: formData.authors,
+        authorIds: formData.authorIds.length > 0 ? formData.authorIds : undefined,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        category: formData.category.trim(),
+        featuredImage: formData.featuredImage.trim() || undefined,
+        images: formData.images.length > 0 ? formData.images : undefined,
+        externalUrl: formData.externalUrl.trim() || undefined,
+        doi: formData.doi.trim() || undefined,
+        status: formData.status,
+        visibility: formData.visibility,
+        featured: formData.featured,
+        allowComments: formData.allowComments,
+        viewCount: formData.viewCount,
+        readingTime: formData.readingTime,
+        publishDate: formData.publishDate ? new Date(formData.publishDate).toISOString() : undefined,
+        lastModified: new Date().toISOString(),
+        seoTitle: formData.seoTitle.trim() || undefined,
+        seoDescription: formData.seoDescription.trim() || undefined,
+        seoKeywords: formData.seoKeywords.length > 0 ? formData.seoKeywords : undefined,
+        relatedArticles: formData.relatedArticles.length > 0 ? formData.relatedArticles : undefined,
+        references: formData.references.length > 0 ? formData.references : undefined,
+        tableOfContents: formData.tableOfContents.length > 0 ? formData.tableOfContents : undefined
+      }
+
+      await onSubmit(submitData)
+    } catch (error) {
+      console.error('提交文章表单失败:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const isEditing = !!article
+
+  return (
+    <div className="relative">
+      {/* 加载覆盖层 */}
+      {(loading || isSubmitting) && (
+        <div className="loading-overlay">
+          <LoadingSpinner size="lg" />
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* 基本信息 */}
+        <div className="form-group">
+          <h3 className="form-group-title">
+            <FileText className="h-5 w-5 mr-2 text-blue-600" />
+            基本信息
+          </h3>
+          
+          <div className="form-grid">
+            {/* 标题 */}
+            <div className="md:col-span-2">
+              <FormField
+                type="text"
+                label="文章标题"
+                value={formData.title}
+                onChange={(value) => handleInputChange('title', value)}
+                error={errors.title}
+                placeholder="请输入文章标题"
+                required
+                disabled={loading || isSubmitting}
+                icon={FileText}
+              />
+              <div className="mt-1 flex justify-end">
+                <p className="text-sm text-gray-500">{formData.title.length}/200</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          <div className="form-grid grid-cols-3">
+            <FormField
+              type="select"
+              label="文章类型"
+              value={formData.type}
+              onChange={(value) => handleInputChange('type', value)}
+              disabled={loading || isSubmitting}
+              options={[
+                { value: 'research', label: '研究论文' },
+                { value: 'tutorial', label: '教程指南' },
+                { value: 'review', label: '综述评论' },
+                { value: 'opinion', label: '观点评述' },
+                { value: 'news', label: '新闻报道' },
+                { value: 'technical', label: '技术文档' }
+              ]}
+            />
+
+            <FormField
+              type="select"
+              label="发布状态"
+              value={formData.status}
+              onChange={(value) => handleInputChange('status', value)}
+              disabled={loading || isSubmitting}
+              options={[
+                { value: 'draft', label: '草稿' },
+                { value: 'under_review', label: '审核中' },
+                { value: 'published', label: '已发布' },
+                { value: 'archived', label: '已归档' }
+              ]}
+            />
+
+            <FormField
+              type="select"
+              label="可见性"
+              value={formData.visibility}
+              onChange={(value) => handleInputChange('visibility', value)}
+              disabled={loading || isSubmitting}
+              options={[
+                { value: 'public', label: '公开' },
+                { value: 'internal', label: '内部' },
+                { value: 'private', label: '私有' }
+              ]}
+            />
+          </div>
+
+          <div className="form-grid grid-cols-2">
+            <FormField
+              type="text"
+              label="文章分类"
+              value={formData.category}
+              onChange={(value) => handleInputChange('category', value)}
+              error={errors.category}
+              placeholder="如：机器学习、数据挖掘"
+              required
+              disabled={loading || isSubmitting}
+              icon={BookOpen}
+            />
+
+            <FormField
+              type="text"
+              label="DOI"
+              value={formData.doi}
+              onChange={(value) => handleInputChange('doi', value)}
+              error={errors.doi}
+              placeholder="10.1000/182"
+              disabled={loading || isSubmitting}
+              icon={Link}
+            />
+          </div>
+
+          <div className="form-grid grid-cols-2">
+            <div className="form-checkbox-group">
+              <input
+                type="checkbox"
+                id="featured"
+                checked={formData.featured}
+                onChange={(e) => handleInputChange('featured', e.target.checked)}
+                className="form-checkbox"
+                disabled={loading || isSubmitting}
+              />
+              <label htmlFor="featured" className="form-checkbox-label">
+                设为特色文章
+              </label>
+            </div>
+
+            <div className="form-checkbox-group">
+              <input
+                type="checkbox"
+                id="allowComments"
+                checked={formData.allowComments}
+                onChange={(e) => handleInputChange('allowComments', e.target.checked)}
+                className="form-checkbox"
+                disabled={loading || isSubmitting}
+              />
+              <label htmlFor="allowComments" className="form-checkbox-label">
+                允许评论
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 作者信息 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <Users className="h-5 w-5 mr-2 text-purple-600" />
+          作者信息
+        </h3>
+        
+        <div className="form-grid">
+          <div>
+            <label className="form-label-enhanced required">
+              作者
+            </label>
+            <div className="flex space-x-2 mb-2">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Users className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={authorInput}
+                  onChange={(e) => setAuthorInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
+                  className="form-input-enhanced pl-10"
+                  placeholder="输入作者姓名并按回车添加"
+                  disabled={loading || isSubmitting}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={addAuthor}
+                className="btn-enhanced btn-primary"
+                disabled={loading || isSubmitting || !authorInput.trim()}
+              >
+                添加
+              </button>
+            </div>
+            {formData.authors.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.authors.map((author, index) => (
+                  <span
+                    key={index}
+                    className="tag-item tag-blue"
+                  >
+                    {author}
+                    <button
+                      type="button"
+                      onClick={() => removeAuthor(index)}
+                      className="tag-remove"
+                      disabled={loading || isSubmitting}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {errors.authors && (
+              <div className="form-error">
+                <Users className="h-4 w-4 mr-1" />
+                {errors.authors}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 内容信息 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+          内容信息
+        </h3>
+        
+        <div className="form-grid">
+          {/* 文章摘要 */}
+          <div>
+            <FormField
+              type="textarea"
+              label="文章摘要"
+              value={formData.summary}
+              onChange={(value) => handleInputChange('summary', value)}
+              error={errors.summary}
+              placeholder="请输入文章摘要（50-1000字符）"
+              required
+              disabled={loading || isSubmitting}
+              rows={4}
+            />
+            <div className="mt-1 flex justify-end">
+              <p className="text-sm text-gray-500">{formData.summary.length}/1000</p>
+            </div>
+          </div>
+
+          {/* 文章内容 */}
+          <FormField
+            type="textarea"
+            label="文章内容"
+            value={formData.content}
+            onChange={(value) => handleInputChange('content', value)}
+            error={errors.content}
+            placeholder="请输入文章详细内容"
+            required
+            disabled={loading || isSubmitting}
+            rows={12}
+          />
+
+          {/* 标签 */}
+          <div>
+            <label className="form-label-enhanced">
+              标签
+            </label>
+            <div className="flex space-x-2 mb-2">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Tag className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  className="form-input-enhanced pl-10"
+                  placeholder="输入标签并按回车添加"
+                  disabled={loading || isSubmitting}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={addTag}
+                className="btn-enhanced btn-primary"
+                disabled={loading || isSubmitting || !tagInput.trim()}
+              >
+                添加
+              </button>
+            </div>
+            {formData.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="tag-item tag-green"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(index)}
+                      className="tag-remove"
+                      disabled={loading || isSubmitting}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 媒体信息 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <Image className="h-5 w-5 mr-2 text-orange-600" />
+          媒体信息
+        </h3>
+        
+        <div className="form-grid">
+          {/* 特色图片 */}
+          <div>
+            <label htmlFor="featuredImage" className="form-label-enhanced">
+              特色图片
+            </label>
+            <input
+              type="url"
+              id="featuredImage"
+              value={formData.featuredImage}
+              onChange={(e) => handleInputChange('featuredImage', e.target.value)}
+              className={`form-input-enhanced ${
+                errors.featuredImage ? 'error' : formData.featuredImage ? 'success' : ''
+              }`}
+              placeholder="https://example.com/image.jpg"
+              disabled={loading || isSubmitting}
+            />
+            {errors.featuredImage && (
+              <div className="form-error">
+                <Image className="h-4 w-4" />
+                {errors.featuredImage}
+              </div>
+            )}
+            {formData.featuredImage && isValidUrl(formData.featuredImage) && (
+              <div className="mt-2">
+                <img
+                  src={formData.featuredImage}
+                  alt="特色图片预览"
+                  className="w-32 h-20 object-cover rounded-md border border-gray-200"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 其他图片 */}
+          <div>
+            <label className="form-label-enhanced">
+              其他图片
+            </label>
+            <div className="flex space-x-2 mb-2">
+              <input
+                type="url"
+                value={imageInput}
+                onChange={(e) => setImageInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
+                className="form-input-enhanced flex-1"
+                placeholder="输入图片URL并按回车添加"
+                disabled={loading || isSubmitting}
+              />
+              <button
+                type="button"
+                onClick={addImage}
+                className="btn-enhanced btn-primary"
+                disabled={loading || isSubmitting || !imageInput.trim() || !isValidUrl(imageInput.trim())}
+              >
+                添加
+              </button>
+            </div>
+            {formData.images.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {formData.images.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={image}
+                      alt={`图片 ${index + 1}`}
+                      className="w-full h-16 object-cover rounded-md border border-gray-200"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM4LjY4NjI5IDE2IDYgMTMuMzEzNyA2IDEwQzYgNi42ODYyOSA4LjY4NjI5IDQgMTIgNEMxNS4zMTM3IDQgMTggNi42ODYyOSAxOCAxMEMxOCAxMy4zMTM3IDE1LjMxMzcgMTYgMTIgMTZaIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="tag-remove absolute top-1 right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={loading || isSubmitting}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+        </div>
+
+          {/* 外部链接 */}
+          <div>
+            <label htmlFor="externalUrl" className="form-label-enhanced">
+              外部链接
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Link className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="url"
+                id="externalUrl"
+                value={formData.externalUrl}
+                onChange={(e) => handleInputChange('externalUrl', e.target.value)}
+                className={`form-input-enhanced pl-10 ${
+                  errors.externalUrl ? 'error' : formData.externalUrl ? 'success' : ''
+                }`}
+                placeholder="https://example.com/article"
+                disabled={loading || isSubmitting}
+              />
+            </div>
+            {errors.externalUrl && (
+              <div className="form-error">
+                <Link className="h-4 w-4" />
+                {errors.externalUrl}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 统计和时间信息 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <Clock className="h-5 w-5 mr-2 text-indigo-600" />
+          统计和时间信息
+        </h3>
+        
+        <div className="form-grid grid-cols-1 md:grid-cols-3">
+          <FormField
+            type="number"
+            label="浏览次数"
+            value={formData.viewCount}
+            onChange={(value) => handleInputChange('viewCount', parseInt(value) || 0)}
+            error={errors.viewCount}
+            disabled={loading || isSubmitting}
+            icon={Eye}
+          />
+
+          <FormField
+            type="number"
+            label="阅读时间（分钟）"
+            value={formData.readingTime}
+            onChange={(value) => handleInputChange('readingTime', parseInt(value) || 0)}
+            error={errors.readingTime}
+            disabled={loading || isSubmitting}
+            icon={Clock}
+          />
+
+          <FormField
+            type="date"
+            label="发布时间"
+            value={formData.publishDate}
+            onChange={(value) => handleInputChange('publishDate', value)}
+            disabled={loading || isSubmitting}
+            icon={Calendar}
+          />
+        </div>
+      </div>
+
+      {/* SEO信息 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <Eye className="h-5 w-5 mr-2 text-pink-600" />
+          SEO信息
+        </h3>
+        
+        <div className="form-grid">
+          {/* SEO标题 */}
+          <div>
+            <FormField
+              type="text"
+              label="SEO标题"
+              value={formData.seoTitle}
+              onChange={(value) => handleInputChange('seoTitle', value)}
+              error={errors.seoTitle}
+              placeholder="SEO优化标题（建议60字符以内）"
+              disabled={loading || isSubmitting}
+              icon={Eye}
+            />
+            <div className="mt-1 flex justify-end">
+              <p className="text-sm text-gray-500">{formData.seoTitle.length}/60</p>
+            </div>
+          </div>
+
+          {/* SEO描述 */}
+          <div>
+            <FormField
+              type="textarea"
+              label="SEO描述"
+              value={formData.seoDescription}
+              onChange={(value) => handleInputChange('seoDescription', value)}
+              error={errors.seoDescription}
+              placeholder="SEO描述（建议160字符以内）"
+              disabled={loading || isSubmitting}
+              rows={3}
+            />
+            <div className="mt-1 flex justify-end">
+              <p className="text-sm text-gray-500">{formData.seoDescription.length}/160</p>
+            </div>
+          </div>
+
+          {/* SEO关键词 */}
+          <div>
+            <label className="form-label-enhanced">
+              SEO关键词
+            </label>
+            <div className="flex space-x-2 mb-2">
+              <input
+                type="text"
+                value={seoKeywordInput}
+                onChange={(e) => setSeoKeywordInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSeoKeyword())}
+                className="form-input-enhanced flex-1"
+                placeholder="输入SEO关键词并按回车添加"
+                disabled={loading || isSubmitting}
+              />
+              <button
+                type="button"
+                onClick={addSeoKeyword}
+                className="btn-enhanced btn-primary"
+                disabled={loading || isSubmitting || !seoKeywordInput.trim()}
+              >
+                添加
+              </button>
+            </div>
+            {formData.seoKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.seoKeywords.map((keyword, index) => (
+                  <span
+                    key={index}
+                    className="tag-item tag-purple"
+                  >
+                    {keyword}
+                    <button
+                      type="button"
+                      onClick={() => removeSeoKeyword(index)}
+                      className="tag-remove"
+                      disabled={loading || isSubmitting}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 参考文献 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <Link className="h-5 w-5 mr-2 text-indigo-600" />
+          参考文献
+        </h3>
+        
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <input
+              type="text"
+              value={referenceTitle}
+              onChange={(e) => setReferenceTitle(e.target.value)}
+              className="form-input-enhanced"
+              placeholder="文献标题"
+              disabled={loading || isSubmitting}
+            />
+            <input
+              type="url"
+              value={referenceUrl}
+              onChange={(e) => setReferenceUrl(e.target.value)}
+              className="form-input-enhanced"
+              placeholder="文献URL"
+              disabled={loading || isSubmitting}
+            />
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={referenceAuthors}
+                onChange={(e) => setReferenceAuthors(e.target.value)}
+                className="flex-1 form-input-enhanced"
+                placeholder="作者（可选）"
+                disabled={loading || isSubmitting}
+              />
+              <button
+                type="button"
+                onClick={addReference}
+                className="btn-enhanced btn-primary"
+                disabled={loading || isSubmitting || !referenceTitle.trim() || !referenceUrl.trim() || !isValidUrl(referenceUrl.trim())}
+              >
+                添加
+              </button>
+            </div>
+          </div>
+          
+          {formData.references.length > 0 && (
+            <div className="space-y-2">
+              {formData.references.map((ref, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-sm text-gray-900">{ref.title}</div>
+                    {ref.authors && (
+                      <div className="text-sm text-gray-600">作者：{ref.authors}</div>
+                    )}
+                    <div className="text-sm text-blue-600 hover:text-blue-800">
+                      <a href={ref.url} target="_blank" rel="noopener noreferrer">
+                        {ref.url}
+                      </a>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeReference(index)}
+                    className="ml-2 text-red-400 hover:text-red-600 transition-colors"
+                    disabled={loading || isSubmitting}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 目录 */}
+      <div className="form-group">
+        <h3 className="form-group-title">
+          <BookOpen className="h-5 w-5 mr-2 text-teal-600" />
+          目录
+        </h3>
+        
+        <div className="space-y-2">
+          <div className="flex space-x-2">
+            <select
+              value={tocLevel}
+              onChange={(e) => setTocLevel(parseInt(e.target.value))}
+              className="form-input-enhanced"
+              disabled={loading || isSubmitting}
+            >
+              <option value={1}>H1</option>
+              <option value={2}>H2</option>
+              <option value={3}>H3</option>
+              <option value={4}>H4</option>
+            </select>
+            <input
+              type="text"
+              value={tocTitle}
+              onChange={(e) => setTocTitle(e.target.value)}
+              className="flex-1 form-input-enhanced"
+              placeholder="目录标题"
+              disabled={loading || isSubmitting}
+            />
+            <button
+              type="button"
+              onClick={addTocItem}
+              className="btn-enhanced btn-primary"
+              disabled={loading || isSubmitting || !tocTitle.trim()}
+            >
+              添加
+            </button>
+          </div>
+          
+          {formData.tableOfContents.length > 0 && (
+            <div className="space-y-1">
+              {formData.tableOfContents.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  style={{ paddingLeft: `${item.level * 12 + 8}px` }}
+                >
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      H{item.level} {item.title}
+                    </span>
+                    <span className="ml-2 text-xs text-gray-500">#{item.anchor}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeTocItem(index)}
+                    className="ml-2 text-red-400 hover:text-red-600 transition-colors"
+                    disabled={loading || isSubmitting}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="btn-enhanced btn-secondary"
+          disabled={loading || isSubmitting}
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          className="btn-enhanced btn-primary"
+          disabled={loading || isSubmitting}
+        >
+          {(loading || isSubmitting) && (
+            <LoadingSpinner size="sm" className="mr-2" />
+          )}
+          {isEditing ? '更新文章' : '添加文章'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export default ArticleForm
